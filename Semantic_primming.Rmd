@@ -1,0 +1,45 @@
+---
+title: "Final Project"
+author: "Joaquin"
+date: "November 1, 2018"
+output: pdf_document
+---
+
+```{r}
+library(ggplot2)
+library(lattice)
+library(dplyr)
+library(readtext)
+
+raw1 = read.csv(file = 'PROYECTO SOA/SOA 66/SOA_66_18_23_2018_may_09_1833.csv', header = F)
+raw1
+
+```
+
+```{r}
+#Select only the 'ETAPA DE TEST' phase
+raw2 = read.csv(file = 'PROYECTO SOA/SOA 66/SOA_66_18_23_2018_may_09_1833.csv', skip = 30)[c(-267:-600),] 
+#Rename columns to english
+colnames(raw2)[colnames(raw2)=="Tiempo.Resp"] <- "RT"
+colnames(raw2)[colnames(raw2)=="Calidad.respuesta..1.correcto..0.error."] <- "Answer"
+colnames(raw2)[colnames(raw2)=="Tecla.presionada..vacio.si.no.se.presiono."] <- "Key_pressed"
+colnames(raw2)[colnames(raw2)=="Tecla.para.responder.afirmativamente"] <- "correct_key"
+colnames(raw2)[9] = 'Prime_aparition_time'
+#Append columns to DF 
+raw2$ID = as.character(raw1[2,2])
+raw2$Age = as.character(raw1[3,2])
+raw2$Gender = as.character(raw1[4,2])
+raw2$Neuro_A = as.character(raw1[5,2])
+raw2$Medication_A = as.character(raw1[6,2])
+raw2$Works_A = as.character(raw1[7,2])
+raw2$Sleep_hours = as.character(raw1[8,2])
+#Convert  empty fields (space) in NA
+raw2$Key_pressed = replace(raw2$Key_pressed,list=raw2$Key_pressed[raw2$Key_pressed==''],values = NA) 
+#Append LIKERT Pre-Objective
+
+```
+
+```{r}
+raw2 = read.csv(file = 'PROYECTO SOA/SOA 66/SOA_66_18_23_2018_may_09_1833.csv', skip = 297)
+```
+
