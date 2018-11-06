@@ -1,0 +1,121 @@
+---
+title: "Final Project"
+author: "Joaquin"
+date: "November 1, 2018"
+output: pdf_document
+---
+
+```{r}
+library(ggplot2)
+library(lattice)
+library(dplyr)
+library(readtext)
+
+setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/SOA 66')
+PATH = 'C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/SOA 66'
+SOA = 66
+files <- list.files(path=PATH, pattern="*.csv", full.names=TRUE, recursive=FALSE)
+```
+
+```{r}
+raw1 = read.csv(file = files[1], header = F)
+raw1
+
+```
+
+```{r}
+#Select only the 'ETAPA DE TEST' phase
+raw2 = read.csv(file = files[1], skip = 30)[c(-267:-600),] 
+#Rename columns to english
+colnames(raw2)[colnames(raw2)=="Tiempo.Resp"] <- "RT"
+colnames(raw2)[colnames(raw2)=="Calidad.respuesta..1.correcto..0.error."] <- "Answer"
+colnames(raw2)[colnames(raw2)=="Tecla.presionada..vacio.si.no.se.presiono."] <- "Key_pressed"
+colnames(raw2)[colnames(raw2)=="Tecla.para.responder.afirmativamente"] <- "correct_key"
+colnames(raw2)[9] = 'Prime_aparition_time'
+#Append columns to DF 
+raw2$ID = as.character(raw1[2,2])
+raw2$Age = as.character(raw1[3,2])
+raw2$Gender = as.character(raw1[4,2])
+raw2$Neuro_A = as.character(raw1[5,2])
+raw2$Medication_A = as.character(raw1[6,2])
+raw2$Works_A = as.character(raw1[7,2])
+raw2$Sleep_hours = as.character(raw1[8,2])
+#Convert  empty fields (space) in NA
+raw2$Key_pressed = replace(raw2$Key_pressed,list=raw2$Key_pressed[raw2$Key_pressed==''],values = NA) 
+
+```
+
+```{r setup, include F}
+#install.packages('reticulate')
+#devtools::install_github("rstudio/reticulate")
+library(reticulate)
+use_condaenv(condaenv = 'C:/Users/joaqu/Anaconda3/envs/rstudio/python.exe')
+#py_discover_config()
+py_available(initialize = T)
+actual_file = as.data.frame(files[1],header = F)
+write.table(actual_file, 'C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/file.csv', sep="\n")
+```
+
+```{python}
+a =open('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/file.csv', 'r')
+for n,file in enumerate(a):
+  if n ==2:
+    actual_file = file.strip()
+    actual_file = actual_file.replace('\"','')
+a.close()    
+
+b = open(actual_file, 'r')
+
+LIKERT_PRE = ()
+LIKERT_POST = ()
+for n,l in enumerate(b):
+    if n == 298:
+        LIKERT_PRE = (l)
+    if n == 450:
+        LIKERT_POST = (l)
+PRE = LIKERT_PRE.strip()[-1]
+POST = LIKERT_POST.strip()[-1]
+b.close()
+
+with open("C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/pre.csv",'w') as pre:
+  pre.write(PRE)
+pre.close()
+  
+  
+with open("C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/post.csv", 'w') as post:
+  post.write(POST)
+post.close()
+```
+
+```{r}
+#Append LIKERT Pre-Objective and Post-Objective
+pre = read.csv("C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/pre.csv",header = F)
+post = read.csv("C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/post.csv",header = F)
+
+raw2$prelikert = c(pre[1,1])
+raw2$postlikert = c(post[1,1])
+```
+
+```{r}
+#Creating the data frame with the similarity values
+similitud = read.csv(file = files[1], skip = 453, header = F)[c(-65:-75),]
+#similitud = read.csv(file = files[file], skip = 453, header = F)[c(-65:-75),]
+colnames(similitud) <- c('word1','word2','likert')
+```
+
+```{r}
+raw2$similarity = NA
+
+for (n in seq(from = 1,to =length(similitud$word1),by = 1)){
+  for (i in seq(from = 1,to =length(raw2$Prime),by = 1)){
+    if(raw2$Prime[i] == similitud$word1[n] & raw2$Target[i] == similitud$word2[n]){
+      raw2$similarity[i] = similitud$likert[n]}}
+}
+#print(paste(raw2$Prime[i],raw2$Target[i],similitud$word1[n],similitud$word2[n],similitud$likert[n]))
+```
+
+```{r}
+raw2$SOA = SOA
+save(raw2,file = paste0(raw2$ID[1], '.Rda'))
+```
+
