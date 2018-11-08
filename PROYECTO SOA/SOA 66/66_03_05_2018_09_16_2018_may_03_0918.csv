@@ -1,5 +1,5 @@
 Nombre,66_03_05_2018
-Apellido,09_16
+Apellido,09_161
 Edad,18
 Sexo,Femenino
 Antecendente neurologico?,No
@@ -21,14 +21,14 @@ Node,u-76627f80a4294
 Release,XP
 Version,5.1.2600
 Machine,x86
-"Processor,""x86 Family 18 Model 1 Stepping 0, AuthenticAMD"""
+Processor,"x86 Family 18 Model 1 Stepping 0, AuthenticAMD"
 Screen Width,1280
 Screen Height,720
-
+""
 Estimulos
 Imagenes
 ETAPA DE TEST
-"Num Trial,""Calidad respuesta (1:correcto, 0:error)"",Tiempo Resp,Prime,Target,Categoria,Tecla presionada (vacio si no se presiono),Tecla para responder afirmativamente,Tiempo de aparicion del prime"
+Num Trial,"Calidad respuesta (1:correcto, 0:error)",Tiempo Resp,Prime,Target,Categoria,Tecla presionada (vacio si no se presiono),Tecla para responder afirmativamente,Tiempo de aparicion del prime
 -9,0,0,serpiente,hilo,sro,,lctrl,0.033353959791384113
 -8,1,0.7074105787187364,serpiente,hilo,sro,rctrl,lctrl,0.033381616936821956
 -7,1,0.6356048045208809,rueda,pavo,sra,lctrl,lctrl,0.03340536297218932
@@ -299,7 +299,7 @@ ETAPA DE TEST
 LIKERT preobjetiva,2
 
 ETAPA DE VISIBILIDAD
-"Num Trial,""Calidad respuesta (1:correcto, 0:error)"",Tiempo Resp,Prime,Target,Categoria,Tecla presionada (vacio si no se presiono),Tecla para responder afirmativamente,Tiempo de aparicion del prime"
+Num Trial,"Calidad respuesta (1:correcto, 0:error)",Tiempo Resp,Prime,Target,Categoria,Tecla presionada (vacio si no se presiono),Tecla para responder afirmativamente,Tiempo de aparicion del prime
 -19,0,1.9192335897441808,violin,mapache,sra,rctrl,lctrl,0.10015658414704376
 -18,0,1.3334124867824357,buho,carro,sro,lctrl,lctrl,0.10014848255923425
 -17,0,0,pavo,rueda,sro,,lctrl,0.10017390478424204

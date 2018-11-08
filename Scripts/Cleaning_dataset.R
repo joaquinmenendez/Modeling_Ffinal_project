@@ -4,24 +4,24 @@ library(dplyr)
 library(readtext)
 library(reticulate)
 
-setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/SOA 317')
-PATH = 'C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/SOA 317'
-SOA =  317
+setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/SOA 66')
+PATH = 'C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/SOA 66'
+SOA =  66
 files <- list.files(path=PATH, pattern="*.csv", full.names=TRUE, recursive=FALSE)
 
 for (fffile in files){raw1 = read.csv(file = fffile, header = F)
-  #Select only the 'ETAPA DE TEST' phase
-  
-  raw2 = read.csv(file = fffile, skip = 30)[c(-267:-600),] 
-  #Rename columns to english
-  colnames(raw2)[colnames(raw2)=="Tiempo.Resp"] <- "RT"
-  colnames(raw2)[colnames(raw2)=="Calidad.respuesta..1.correcto..0.error."] <- "Answer"
-  colnames(raw2)[colnames(raw2)=="Tecla.presionada..vacio.si.no.se.presiono."] <- "Key_pressed"
-  colnames(raw2)[colnames(raw2)=="Tecla.para.responder.afirmativamente"] <- "correct_key"
-  colnames(raw2)[9] = 'Prime_aparition_time'
-  #Append columns to DF 
-  raw2$ID = as.character(raw1[2,2])
-  raw2$Age = as.character(raw1[3,2])
+#Select only the 'ETAPA DE TEST' phase
+
+raw2 = read.csv(file = fffile, skip = 30)[c(-267:-600),] 
+#Rename columns to english
+colnames(raw2)[colnames(raw2)=="Tiempo.Resp"] <- "RT"
+colnames(raw2)[colnames(raw2)=="Calidad.respuesta..1.correcto..0.error."] <- "Answer"
+colnames(raw2)[colnames(raw2)=="Tecla.presionada..vacio.si.no.se.presiono."] <- "Key_pressed"
+colnames(raw2)[colnames(raw2)=="Tecla.para.responder.afirmativamente"] <- "correct_key"
+colnames(raw2)[9] = 'Prime_aparition_time'
+#Append columns to DF 
+raw2$ID = as.character(raw1[2,2])
+raw2$Age = as.character(raw1[3,2])
   raw2$Gender = as.character(raw1[4,2])
   raw2$Neuro_A = as.character(raw1[5,2])
   raw2$Medication_A = as.character(raw1[6,2])
