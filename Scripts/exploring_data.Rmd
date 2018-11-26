@@ -1,0 +1,329 @@
+---
+title: "Exploring_data"
+author: "Joaquin Menendez (jm622)"
+date: "November 7, 2018"
+output: pdf_document
+---
+
+```{r}
+library(doBy)
+library(ggplot2)
+library(dplyr)
+setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/')
+PATH = 'C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/'
+load(file= paste0(PATH,'dfpriming_v4.Rda'))
+str(dfpriming)
+```
+
+```{r} 
+# Assigning the correct types to data ----
+dfpriming$Age[dfpriming$Age == '21 anos '] = 21
+dfpriming$Sleep_hours[dfpriming$Sleep_hours == 'Mas de 7'] = 8
+
+dfpriming$Num.Trial = as.numeric(levels(dfpriming$Num.Trial)[dfpriming$Num.Trial]) #Needed to remove the factor level
+dfpriming$RT = as.numeric(levels(dfpriming$RT)[dfpriming$RT])# from factor to numeric
+dfpriming$RT[dfpriming$RT == 0] <- NA
+
+dfpriming$Prime_aparition_time = as.numeric(levels(dfpriming$Prime_aparition_time)[dfpriming$Prime_aparition_time])
+dfpriming$Answer = as.numeric(levels(dfpriming$Answer)[dfpriming$Answer])
+
+dfpriming$Age = as.numeric(dfpriming$Age) #to numeric
+dfpriming$Sleep_hours =  as.numeric(dfpriming$Sleep_hours)
+
+dfpriming$ID = as.factor(dfpriming$ID) #to factor
+dfpriming$Neuro_A = as.factor(dfpriming$Neuro_A)
+dfpriming$Medication_A=  as.factor(dfpriming$Medication_A)
+dfpriming$Works_A=  as.factor(dfpriming$Works_A)
+dfpriming$Gender = as.factor((dfpriming$Gender))
+
+dfpriming$Age[is.na(dfpriming$Age)]<- 19 #one subject typed '19*' on the age field. 
+dfpriming$correct_key = factor(dfpriming$correct_key, levels = c('rctrl','lctrl')) #converting to factor
+dfpriming$Key_pressed = factor(dfpriming$Key_pressed, levels = c('rctrl','lctrl')) #converting to factor
+dfpriming$Categoria = factor(dfpriming$Categoria, levels = c("nr","sra","sro","wra","wro" ))
+
+
+#recoding related 
+dfpriming$Relation = dfpriming$Categoria
+levels(dfpriming$Relation)[levels(dfpriming$Relation)=="sra"] <- "SR"
+levels(dfpriming$Relation)[levels(dfpriming$Relation)=="sro"] <- "SR"
+levels(dfpriming$Relation)[levels(dfpriming$Relation)=="wra"] <- "WR"
+levels(dfpriming$Relation)[levels(dfpriming$Relation)=="wro"] <- "WR"
+
+```
+
+
+
+```{r, fig.height= 8}
+####################################### Some exploratory metrics ----
+summary(dfpriming)
+#lets explore by Correct Answer
+summaryBy(RT~SOA+Relation,data = dfpriming[dfpriming$Answer == 1,], FUN = mean)
+summaryBy(RT~SOA+Relation,data = dfpriming[dfpriming$Answer == 0,], FUN = mean)
+
+# CHecking that all subject respodn more o less correctly
+all_answer <- dfpriming %>%
+          group_by(ID,SOA) %>%
+          count(Answer)
+
+ggplot2::ggplot(data = all_answer) + geom_point(mapping = aes(x= ID, y=n, color = Answer)) + coord_flip() + facet_wrap(~SOA, scales = 'free')+  theme_classic()
+
+# We can see that subjects 18_231, 8_25 and 20_38 shown a abnormal pattern of response. Asking to the experimenters they respond that this subjects mis understood the instructions and responded with opposite keys. In other words, they responded to Animals Images with the "Object key" (right control) and with the "Animal Key" (lef control) to the object images.
+
+# We would replace this
+dfpriming_corrected = dfpriming
+index1 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '66_18_231']== 1)
+index0 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '66_18_231']== 0)
+dfpriming_corrected[dfpriming_corrected$ID == '66_18_231',]$Answer[index1] = '0'
+dfpriming_corrected[dfpriming_corrected$ID == '66_18_231',]$Answer[index0] = '1'     
+
+index1 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '233_8_25']== 1)
+index0 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '233_8_25']== 0)
+dfpriming_corrected[dfpriming_corrected$ID == '233_8_25',]$Answer[index1] = '0'
+dfpriming_corrected[dfpriming_corrected$ID == '233_8_25',]$Answer[index0] = '1'  
+
+index1 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '233_20_38']== 1)
+index0 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '233_20_38']== 0)
+dfpriming_corrected[dfpriming_corrected$ID == '233_20_38',]$Answer[index1] = '0'
+dfpriming_corrected[dfpriming_corrected$ID == '233_20_38',]$Answer[index0] = '1'  
+```
+
+```{r}
+# Usually for primming effects expriments missing values are not considered. And the focus is only on correct answers. 
+# We will need to remove NA responses and the training sets.
+#   BUT FIRST A QUICK ANALYSIS OF THE NA RESPONSE VALUES to see if there is an assymetry on the NA distribution.
+
+dffinal = dfpriming_corrected[dfpriming_corrected$Num.Trial > 0,] #Delete training trials
+NA_by_Categoria = summaryBy(Key_pressed~Categoria, data=dffinal[is.na(dffinal$Key_pressed),],FUN =  summary)
+NA_by_Categoria[c(1,8)]
+NA_by_Relation = summaryBy(Key_pressed~Relation, data=dffinal[is.na(dffinal$Key_pressed),],FUN =  summary)
+NA_by_Relation[c(1,8)]
+
+# There is no evidence of preference of NA response given a specific Relationship. Given the low numbers of NA we are going to use a classical aproach and we are not going to study trials were subjects did not response.
+  
+dffinal =  dffinal[!is.na(dffinal$RT),]
+summary(dffinal)
+save(dffinal, file= 'dffinal.Rda')
+```
+
+
+```{r, fig.width= 10}
+# Preparing data for ANOVA ----
+# THIS IS ONLY TO THE ANOVA ANALYSIS, FOR THE HIERARCHICAL MODEL THE DF IS GOING TO BE THE dffinal for the hierarchycal
+#elimina outliers que estan a mas de 2.5 SD de la media de cada Sujeto en respuestas correctas.
+df_without_out = dffinal
+rownames(df_without_out) <- seq(length=nrow(df_without_out)) # Reset the row numbers 
+df_without_out$outlier = NA
+df_without_out = df_without_out[df_without_out$Answer == 1,] #Only chose the correct answers!!
+
+for (Id in levels(df_without_out$ID)){#print(ID)
+  x = df_without_out[df_without_out$ID == Id,]
+  mean = mean(x$RT)
+  sd = sd(x$RT)
+  outlier = (mean-2.5*sd) > x$RT | x$RT > (mean+2.5*sd)
+  df_without_out$outlier[df_without_out$ID == Id] = outlier}
+
+# Given that in the usual statistical measures the dataset is composed of a unique value for subject for every level we are going to create a dataset summarizing the 245 trials  to only 3 (one per condition) and only to the correct responses.
+# The idea is use this DF to do an ANOVA and compare with the results of our analysis
+
+df_without_out = df_without_out[df_without_out$outlier == FALSE,]  #Removing outliers
+
+df_without_summarized <- df_without_out %>% #We do this to check some means and SD 
+      group_by(ID,Relation,dprime, SOA) %>%
+        summarize(RT = mean(RT))
+
+df_without_summarized %>% 
+  group_by(SOA, Relation) %>%
+  summarize(mean_RT = mean(RT), sd_RT= sd(RT))
+
+df_without_summarized %>% 
+  group_by(SOA) %>%
+  summarize(mean_dprime = mean(dprime), sd_dprime= sd(dprime))
+
+ggplot(data = df_without_summarized) + geom_boxplot(aes(x=Relation, y=RT, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
+
+ggplot(data = df_without_summarized) + geom_boxplot(aes(x=Relation, y=dprime, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
+
+ggplot(data = df_without_out) + geom_density(aes(x = HitRate)) #We see that there are cases that had a very good accuracy on the objective visibility test
+
+
+#ttest 
+levels(df_without_summarized$Relation)
+
+t.test(df_without_summarized[df_without_summarized$Relation == "nr",]$dprime[df_without_summarized$SOA == 66], mu=0)
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 150], mu=0)
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 233], mu=0)
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 317], mu=0)
+ #Definetively problems! All the dprimesvalues are different to 0. We need to remove some subjects.
+
+```
+
+```{r}
+# Also we need to delete the subjects that Reported to see the D'prime.
+# Subjects that responded with a HIT RATE bigger than 65% will be removed to assure that they only saw the priming subliminally.
+
+df_without_out_and_dprime = df_without_out
+df_without_out_and_dprime = df_without_out_and_dprime[df_without_out_and_dprime$HitRate < .65,]
+save(df_without_out_and_dprime, file = 'df_no_outliers.Rda')
+```
+
+```{r}
+#Some analysis of the Prime visibility test ----
+summary(df_without_out_and_dprime[,25:27])
+#We chose a case, if not we have our n augmented by three. In this case I chose  nr.
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime, mu=0) # T test of Dprime for all groups --> Different from 0! 
+summary(df_without_out_and_dprime$prelikert)
+# Despite the fact that T test is significatively, the median of the subjective visibility report (prelikert) is 2.
+```
+
+```{r}
+#More detailed analyis
+df_without_out_and_dprime %>%
+  group_by(SOA) %>%
+  summarise(n_distinct(ID))  # Groups are very different!!
+
+df_without_summarized <- df_without_out_and_dprime %>% #We do this to check some means and SD 
+      group_by(ID,Relation,dprime, SOA) %>%
+        summarize(RT = mean(RT))
+
+df_without_summarized %>% 
+  group_by(SOA, Relation) %>%
+  summarize(mean_RT = mean(RT), sd_RT= sd(RT))
+
+df_without_summarized %>% 
+  group_by(SOA) %>%
+  summarize(mean_dprime = mean(dprime), sd_dprime= sd(dprime))
+
+ggplot(data = df_without_summarized) + geom_boxplot(aes(x=Relation, y=RT, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
+
+ggplot(data = df_without_summarized) + geom_boxplot(aes(x=Relation, y=dprime, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
+
+ggplot(data = df_without_out_and_dprime) + geom_density(aes(x = HitRate))  + theme_classic()
+
+
+#ttest 
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 66], mu=0)
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 150], mu=0)
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 233], mu=0)
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 317], mu=0)
+#Despite of removing all the subjects with a hit rate over 65% we only see no difference between zero a dprime for the SOA 66. This impply a serious limitation to the experimental question. We can remove more subjects. But we will lose a lot of subjects.
+```
+
+```{r}
+# Lets plot some graphs ----
+
+histogramRT<-ggplot(data = df_without_summarized, aes(x=RT))+
+  labs(x="RT")+
+  ggtitle("Histogram of RT")+
+  geom_histogram( colour= "cyan4", fill="cyan1") +
+  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_without_summarized$RT), sd=sd(df_without_summarized$RT))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT
+
+qplot(sample = df_without_summarized[df_without_summarized$SOA == 66,]$RT)
+qplot(sample = df_without_summarized[df_without_summarized$SOA == 150,]$RT)
+qplot(sample = df_without_summarized[df_without_summarized$SOA == 233,]$RT)
+qplot(sample = df_without_summarized[df_without_summarized$SOA == 317,]$RT)
+
+#The last two SOA (233 and 317 are just Horrible) We could try to transform this value to do an ANOVA but I do not know if this continue beeing a good idea.
+
+# Distribution of reaction times do not seem to fit perfectly to the normal distribution. I should probably need to log RT.
+# The N os subjects is not balanced among groups. A comparision between groups so assymetrical would be a mistake.
+```
+
+```{r}
+#LETS MAKE AN ANOVA ANYWAY AND SEE WHAT HAPPENS
+library(lmerTest)  #https://www.r-bloggers.com/how-to-do-repeated-measures-anovas-in-r/
+library(psycho)
+
+rtime66.aov <- aov(RT ~ Relation + Error(ID/Relation) , data = df_without_summarized[df_without_summarized$SOA == 66,]) #we used the average values of each subject for each relation and we do a ONE-Factor ANOVA for the SOA 66 (The only condition that demostrated no difference among  dprime with 0)
+summary(rtime66.aov)
+
+#Or other way
+fit <- lmer(RT ~ Relation + (1|ID), data= df_without_summarized[df_without_summarized$SOA == 66,])
+anova(fit)
+results <- psycho::get_contrasts(fit, "Relation")
+print(results$means)
+print(results$contrasts)
+
+
+#The data suggest that when there is no difference among dprime and 0 (in other words, the subject did not process counciously the prime)  there are evidence to claim a Relation effect (F(2,40) = 3.72, p = 0.032) priming effect between WR over NR ( p = 0.042) and a marginal significance among  SR over NR (p = 0.086)
+
+ggplot(results$means, aes(x=Relation, y=Mean, group=1, color = Relation)) +
+  geom_line(color = 'Black', size = 1) +
+  geom_pointrange(aes(ymin=CI_lower, ymax=CI_higher)) +
+    ylab("RT") +
+  xlab("Relation") +
+  theme_classic()
+```
+
+
+
+
+```{r}
+
+#A possibility to solve this issue is to apply a regression with the dprime values and the priming effect
+
+#CALCULATE PRIMING EFFECT
+df_priming_effect = data.frame('ID'= 0,'Relation'= 0,'dprime'= 0, 'SOA'= 0,'priming_effect'= 0)
+
+for (id in levels(df_without_summarized$ID)){
+sr = df_without_summarized %>%
+  filter(ID == id) %>%
+  filter(Relation == 'SR') %>%
+  select(RT, dprime, SOA)
+
+nr = df_without_summarized %>%
+  filter(ID == id) %>%
+  filter(Relation == 'nr') %>%
+  select(RT, dprime, SOA)
+
+wr = df_without_summarized %>%
+  filter(ID == id) %>%
+  filter(Relation == 'WR') %>%
+  select(RT, dprime, SOA)
+
+sr$priming_effect = nr$RT - sr$RT
+wr$priming_effect  = nr$RT - wr$RT
+
+sr = sr[-3] #remove RT
+wr = wr[-3]
+df_priming_effect = rbind(df_priming_effect,as.data.frame(sr),as.data.frame(wr))
+}
+df_priming_effect = df_priming_effect[-1,]
+df_priming_effect$Relation = as.factor(df_priming_effect$Relation)
+```
+
+```{r}
+#Lets make that regression
+mod1 = lm(data=df_priming_effect[df_priming_effect$SOA == 66,], priming_effect~dprime + Relation)
+mod2 = lm(data=df_priming_effect[df_priming_effect$SOA == 150,], priming_effect~dprime + Relation)
+mod3 = lm(data=df_priming_effect[df_priming_effect$SOA == 233,], priming_effect~dprime + Relation)
+mod4 = lm(data=df_priming_effect[df_priming_effect$SOA == 317,], priming_effect~dprime + Relation)
+summary(mod1)
+summary(mod2)
+summary(mod3)
+summary(mod4)
+
+df_priming_effect$Relation = factor(df_priming_effect$Relation, levels = c('WR','SR'))
+mod1.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 66,], priming_effect~dprime + Relation)
+mod2.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 150,], priming_effect~dprime + Relation)
+mod3.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 233,], priming_effect~dprime + Relation)
+mod4.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 317,], priming_effect~dprime + Relation)
+summary(mod1.2)
+summary(mod2.2)
+summary(mod3.2)
+summary(mod4.2)
+```
+
+
+
+
+
+```{r}
+#Using the 'ts' over RT to transform that in a time series.
+some_val = dfpriming[is.na(dfpriming$RT),]
+delete = ts(some_val$RT[some_val$ID == '12_16'])
+plot(delete)
+acf(delete)
+pacf(delete)
+```
+

@@ -4,6 +4,10 @@ library(dplyr)
 library(readtext)
 library(reticulate)
 
+#This script is used to take the csv file and create a DF for every subject in the experiment.
+#It uses a pyhton script because it was tedious to solve in R
+# This is the first script we run.
+
 setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/SOA 66')
 PATH = 'C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/SOA 66'
 SOA =  66
