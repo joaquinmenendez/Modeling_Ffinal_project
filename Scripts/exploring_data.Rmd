@@ -9,10 +9,11 @@ output: pdf_document
 library(doBy)
 library(ggplot2)
 library(dplyr)
+library(psycho)
 setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/')
 PATH = 'C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/'
 load(file= paste0(PATH,'dfpriming_v4.Rda'))
-str(dfpriming)
+summary(dfpriming)
 ```
 
 ```{r} 
@@ -56,6 +57,7 @@ levels(dfpriming$Relation)[levels(dfpriming$Relation)=="wro"] <- "WR"
 ```{r, fig.height= 8}
 ####################################### Some exploratory metrics ----
 summary(dfpriming)
+save(dfpriming, file = 'dfpriming_clean.Rda')
 #lets explore by Correct Answer
 summaryBy(RT~SOA+Relation,data = dfpriming[dfpriming$Answer == 1,], FUN = mean)
 summaryBy(RT~SOA+Relation,data = dfpriming[dfpriming$Answer == 0,], FUN = mean)
@@ -71,6 +73,7 @@ ggplot2::ggplot(data = all_answer) + geom_point(mapping = aes(x= ID, y=n, color 
 
 # We would replace this
 dfpriming_corrected = dfpriming
+dfpriming_corrected$Answer = as.factor(dfpriming_corrected$Answer)
 index1 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '66_18_231']== 1)
 index0 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '66_18_231']== 0)
 dfpriming_corrected[dfpriming_corrected$ID == '66_18_231',]$Answer[index1] = '0'
@@ -85,6 +88,7 @@ index1 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '233_20_38']
 index0 = which(dfpriming_corrected$Answer[dfpriming_corrected$ID == '233_20_38']== 0)
 dfpriming_corrected[dfpriming_corrected$ID == '233_20_38',]$Answer[index1] = '0'
 dfpriming_corrected[dfpriming_corrected$ID == '233_20_38',]$Answer[index0] = '1'  
+save(dfpriming_corrected, file = 'dfpriming_clean.Rda')
 ```
 
 ```{r}
@@ -127,35 +131,248 @@ for (Id in levels(df_without_out$ID)){#print(ID)
 
 df_without_out = df_without_out[df_without_out$outlier == FALSE,]  #Removing outliers
 
-df_without_summarized <- df_without_out %>% #We do this to check some means and SD 
-      group_by(ID,Relation,dprime, SOA) %>%
+df_summarized <- df_without_out %>% #We do this to check some means and SD 
+      group_by(ID,Relation,dprime, SOA, prelikert) %>%
         summarize(RT = mean(RT))
 
-df_without_summarized %>% 
+df_summarized %>% 
   group_by(SOA, Relation) %>%
   summarize(mean_RT = mean(RT), sd_RT= sd(RT))
 
-df_without_summarized %>% 
+df_summarized %>% 
   group_by(SOA) %>%
   summarize(mean_dprime = mean(dprime), sd_dprime= sd(dprime))
 
-ggplot(data = df_without_summarized) + geom_boxplot(aes(x=Relation, y=RT, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
-
-ggplot(data = df_without_summarized) + geom_boxplot(aes(x=Relation, y=dprime, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
-
-ggplot(data = df_without_out) + geom_density(aes(x = HitRate)) #We see that there are cases that had a very good accuracy on the objective visibility test
+df_summarized$SOA = as.factor(df_summarized$SOA)
 
 
-#ttest 
-levels(df_without_summarized$Relation)
-
-t.test(df_without_summarized[df_without_summarized$Relation == "nr",]$dprime[df_without_summarized$SOA == 66], mu=0)
-t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 150], mu=0)
-t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 233], mu=0)
-t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 317], mu=0)
+#ttest FOR THE VISIBILITY TEST AGAINST 0. THIS IS NECCESATY TO SAY THAT INDIVIDUALS DID NOT WATCHED THE PRIME.
+levels(df_summarized$Relation)
+nr = df_summarized[df_summarized$Relation == "nr",] # I choose one relation (because they are repeated)
+t.test(nr[nr$SOA == 66,]$dprime, mu=0)
+t.test(nr[nr$SOA == 150,]$dprime, mu=0)
+t.test(nr[nr$SOA == 233,]$dprime, mu=0)
+t.test(nr[nr$SOA == 317,]$dprime, mu=0)
  #Definetively problems! All the dprimesvalues are different to 0. We need to remove some subjects.
 
 ```
+
+```{r}
+# SOME ANOVAS TO CHECK GROUPS ARE OKAY
+multiple_data = df_without_out %>% #We do this to check some VARIABELS AS AGE SLEEP 
+      group_by(ID, SOA,Age, Sleep_hours , Gender, prelikert, dprime) %>%
+        summarize(RT = mean(RT)) %>%
+        ungroup()
+
+multiple_data$SOA = as.factor(multiple_data$SOA)
+
+psych::describe(multiple_data[multiple_data$SOA== 66,]$Age)
+psych::describe(multiple_data[multiple_data$SOA== 150,]$Age)
+psych::describe(multiple_data[multiple_data$SOA== 233,]$Age)
+psych::describe(multiple_data[multiple_data$SOA== 317,]$Age)
+```
+
+```{r}
+psych::describe(multiple_data[multiple_data$SOA== 66,]$Sleep_hours)
+psych::describe(multiple_data[multiple_data$SOA== 150,]$Sleep_hours)
+psych::describe(multiple_data[multiple_data$SOA== 233,]$Sleep_hours)
+psych::describe(multiple_data[multiple_data$SOA== 317,]$Sleep_hours)
+```
+
+```{r}
+summary(multiple_data[multiple_data$SOA== 66,]$Gender)
+summary(multiple_data[multiple_data$SOA== 150,]$Gender)
+summary(multiple_data[multiple_data$SOA== 233,]$Gender)
+summary(multiple_data[multiple_data$SOA== 317,]$Gender)
+```
+
+```{r}
+#ANOVA for dprimes
+aov_dprime = aov(dprime~SOA,data= multiple_data)
+summary(aov_dprime)
+TukeyHSD(aov_dprime)
+# Son diferentes! It means that dprime differs by subjects
+# Prueba de levene homogeneidad de la varianza para comparar grupos en dprime
+library(car)
+leveneTest(multiple_data$dprime, multiple_data$SOA, center = median) #Las variables son homogeneas!!
+#CHECK NORMALITY
+#normalidad Shapiro-Wilk
+tapply(multiple_data$dprime, multiple_data$SOA, shapiro.test) #Da normal!!!!
+
+      #ANOVA for prelikert
+      #aov_likert = aov(prelikert~SOA,data= multiple_data) 
+      #summary(aov_likert)
+      #TukeyHSD(aov_likert)
+
+# It does not differ! Subjective reported difference is the same among groups, BUT CHECK NORMALITY
+leveneTest(multiple_data$prelikert, multiple_data$SOA, center = median) #Las variables son homogeneas
+tapply(multiple_data$prelikert, multiple_data$SOA, shapiro.test) # Not NORMAL
+kruskal.test(prelikert~SOA,data= multiple_data) #Need to use a Kruskall Wallis
+pairwise.wilcox.test(multiple_data$prelikert, multiple_data$SOA, p.adjust.method = 'fdr') #The problem is between 150 and 317
+
+
+psych::describe(multiple_data[multiple_data$SOA== 66,]$prelikert)
+psych::describe(multiple_data[multiple_data$SOA== 150,]$prelikert)
+psych::describe(multiple_data[multiple_data$SOA== 233,]$prelikert)
+psych::describe(multiple_data[multiple_data$SOA== 317,]$prelikert)
+
+psych::describe(multiple_data[multiple_data$SOA== 66,]$dprime)
+psych::describe(multiple_data[multiple_data$SOA== 150,]$dprime)
+psych::describe(multiple_data[multiple_data$SOA== 233,]$dprime)
+psych::describe(multiple_data[multiple_data$SOA== 317,]$dprime)
+```
+
+```{r}
+#Lets check the normality of our variables. Using df_summarized
+histogramRT<-ggplot(data = df_summarized, aes(x=dprime))+
+  labs(x="RT")+
+  ggtitle("Histogram of dPrime")+
+  geom_density( colour= "cyan4", fill="cyan1") +
+  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_summarized$dprime), sd=sd(df_summarized$dprime))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT
+#Las varianzas son homogeneas entre los grupos pero no muy lindas
+
+
+histogramRT<-ggplot(data = df_summarized, aes(x=prelikert))+
+  labs(x="RT")+
+  ggtitle("Histogram of prelikert")+
+  geom_density( colour= "cyan4", fill="cyan1") +
+  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_summarized$prelikert), sd=sd(df_summarized$prelikert))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT
+#Las varianzas son homogeneas entre los grupos pero no muy lindas
+```
+
+Resument hasta el momento:
+Hay diferencia entre dprime por grupo 
+Hay diferencia en prelikert por grupo
+Es muy dificil afirmar que el experimento vaya a ser subliminal.
+
+```{r}
+ggplot(data = df_summarized) + geom_boxplot(aes(x=Relation, y=RT, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
+
+ggplot(data = df_summarized) + geom_boxplot(aes(x=as.factor(SOA), y=dprime, color = SOA)) +  theme_classic()
+
+ggplot(data = df_summarized) + geom_boxplot(aes(x=as.factor(SOA), y=prelikert, color = SOA))+  theme_classic()
+
+#ggplot(data = df_summarized) + geom_density(aes(x = dprime)) #We see that there are cases that had a very good accuracy on the objective visibility test
+
+```
+
+
+Dprima claramente muestra una relacion positiva en relacion al SOA. This complicates possible asumptions about the output.
+
+
+```{r}
+#Checking distribution Response time
+histogramRT<-ggplot(df_summarized, aes(x=RT))+
+  labs(x="Tiempo de reacción")+
+  ggtitle("Histograma de tiempos de reacción logaritmizados")+
+  geom_density( colour= "cyan4", fill="cyan1")+
+  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_summarized$RT), sd=sd(df_summarized$RT))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT
+
+#Check homogeneaty
+leveneTest(df_summarized$RT, df_summarized$SOA, center = median) #Las variables  NO son homogeneas!!
+#CHECK NORMALITY
+#normalidad Shapiro-Wilk
+tapply(df_summarized$RT, df_summarized$SOA, shapiro.test) #NO da normal!!!!
+
+```
+```{r}
+#LETS TRY A TRANSFORMATION OF THE DATA
+# Using logaritmic transformation
+
+df_transf = df_summarized
+df_transf$RT = log10(df_transf$RT+1)
+#Checking distribution Response time
+histogramRT<-ggplot(df_transf, aes(x=RT))+
+  labs(x="Tiempo de reacción")+
+  ggtitle("Histograma de tiempos de reacción logaritmizados")+
+  geom_density( colour= "cyan4", fill="cyan1")+
+  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_transf$RT), sd=sd(df_transf$RT))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT
+
+#Not changes
+
+#Inverse transformation
+df_inv = df_summarized
+df_inv$RT = 1/df_inv$RT 
+histogramRT<-ggplot(df_inv, aes(x=RT))+
+  labs(x="Tiempo de reacción")+
+  ggtitle("Histograma de tiempos de reacción logaritmizados")+
+  geom_density( colour= "cyan4", fill="cyan1")+
+  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_inv$RT), sd=sd(df_inv$RT))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT
+
+#Check homogeneaty
+leveneTest(df_inv$RT, df_inv$SOA, center = median) #Las variables  NO son homogeneas!!
+#CHECK NORMALITY
+#normalidad Shapiro-Wilk
+tapply(df_inv$RT, df_inv$SOA, shapiro.test) #NO da normal!!!!
+
+```
+
+
+```{r}
+#Despite that it does not give me normal results I would run an anova anyway
+#Mixed design ANOVA -----
+# 4x3 mixed:
+# IV between: SOA
+# IV within:  Relation
+# DV: RT
+
+aov_RT <- aov(RT ~ SOA*Relation + Error(ID/Relation), data=df_summarized)
+summary(aov_RT)
+
+#other anova
+
+```
+
+EN resumen no se puede usar anova y los datos no son muy alentadores
+
+```{r, fig.width= 10, fig.height= 8}
+ggplot(data = df_summarized) + geom_point(aes(x=dprime, y=RT, color = Relation) , position = 'jitter') + facet_wrap(~SOA, ncol = 2) + theme_light() 
+ggplot(data = df_summarized) + geom_point(aes(x=dprime, y=RT, color = SOA) , position = 'jitter') + facet_wrap(~Relation, ncol = 3) + theme_light() 
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+THIS WAS FOR NICOLAS. IT DOES NOT SEEM TO WORK VERY WELL
 
 ```{r}
 # Also we need to delete the subjects that Reported to see the D'prime.
@@ -169,7 +386,7 @@ save(df_without_out_and_dprime, file = 'df_no_outliers.Rda')
 ```{r}
 #Some analysis of the Prime visibility test ----
 summary(df_without_out_and_dprime[,25:27])
-#We chose a case, if not we have our n augmented by three. In this case I chose  nr.
+#We chose a case, if not we have our n augmented by three. In this case I chose  nr. We check for all the subjects removed
 t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime, mu=0) # T test of Dprime for all groups --> Different from 0! 
 summary(df_without_out_and_dprime$prelikert)
 # Despite the fact that T test is significatively, the median of the subjective visibility report (prelikert) is 2.
@@ -201,10 +418,11 @@ ggplot(data = df_without_out_and_dprime) + geom_density(aes(x = HitRate))  + the
 
 
 #ttest 
-t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 66], mu=0)
-t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 150], mu=0)
-t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 233], mu=0)
-t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime[df_without_summarized$SOA == 317], mu=0)
+nr_rem = df_without_summarized[df_without_summarized$Relation == 'nr',]
+t.test(nr_rem[nr_rem$SOA== 66,]$dprime, mu=0)
+t.test(nr_rem[nr_rem$SOA== 150,]$dprime, mu=0)
+t.test(nr_rem[nr_rem$SOA== 233,]$dprime, mu=0)
+t.test(nr_rem[nr_rem$SOA== 317,]$dprime, mu=0)
 #Despite of removing all the subjects with a hit rate over 65% we only see no difference between zero a dprime for the SOA 66. This impply a serious limitation to the experimental question. We can remove more subjects. But we will lose a lot of subjects.
 ```
 
@@ -294,29 +512,134 @@ df_priming_effect$Relation = as.factor(df_priming_effect$Relation)
 
 ```{r}
 #Lets make that regression
+#One regression for every group
 mod1 = lm(data=df_priming_effect[df_priming_effect$SOA == 66,], priming_effect~dprime + Relation)
 mod2 = lm(data=df_priming_effect[df_priming_effect$SOA == 150,], priming_effect~dprime + Relation)
 mod3 = lm(data=df_priming_effect[df_priming_effect$SOA == 233,], priming_effect~dprime + Relation)
 mod4 = lm(data=df_priming_effect[df_priming_effect$SOA == 317,], priming_effect~dprime + Relation)
-summary(mod1)
-summary(mod2)
-summary(mod3)
-summary(mod4)
 
-df_priming_effect$Relation = factor(df_priming_effect$Relation, levels = c('WR','SR'))
+#We change the variable that is working as baseline. In this way we get intercepts for every level of our variable Relation
+df_priming_effect$Relation = factor(df_priming_effect$Relation, levels = c('SR','WR'))
 mod1.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 66,], priming_effect~dprime + Relation)
 mod2.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 150,], priming_effect~dprime + Relation)
 mod3.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 233,], priming_effect~dprime + Relation)
 mod4.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 317,], priming_effect~dprime + Relation)
+
+summary(mod1)
 summary(mod1.2)
+plot(mod1)
+plot(mod1$residuals ~ df_priming_effect[df_priming_effect$SOA == 66,]$dprime)
+abline(0,0)
+plot(mod1$residuals ~ df_priming_effect[df_priming_effect$SOA == 66,]$Relation)
+
+
+summary(mod2)
 summary(mod2.2)
+plot(mod2) #Mod 1 and 2 look normal.
+plot(mod2$residuals ~ df_priming_effect[df_priming_effect$SOA == 150,]$dprime)
+abline(0,0)
+plot(mod2$residuals ~ df_priming_effect[df_priming_effect$SOA == 150,]$Relation)
+
+summary(mod3)
 summary(mod3.2)
+plot(mod3)  #Not normally distributed
+plot(mod3$residuals ~ df_priming_effect[df_priming_effect$SOA == 233,]$dprime)
+abline(0,0)  #Awfullll!!!! need more data points
+plot(mod3$residuals ~ df_priming_effect[df_priming_effect$SOA == 233,]$Relation)
+
+summary(mod4)
 summary(mod4.2)
+plot(mod4) #Not normally
+
+#df_priming_effect$SOA = as.factor(df_priming_effect$SOA)
+#mod_full = lm(data=df_priming_effect, priming_effect~dprime + Relation + as.factor(SOA))
+#plot(mod_full)
+#summary(mod_full)
 ```
 
 
 
 
+```{r}
+
+#WE ARE GOING TO USE ALL THE VALUES!! TO SEE IF WE HAVE AN EFFECT
+
+#CALCULATE PRIMING EFFECT
+df_priming_effect = data.frame('ID'= 0,'Relation'= 0,'dprime'= 0, 'SOA'= 0,'priming_effect'= 0)
+
+for (id in levels(df_summarized$ID)){
+sr = df_summarized %>%
+  filter(ID == id) %>%
+  filter(Relation == 'SR') %>%
+  select(RT, dprime, SOA)
+
+nr = df_summarized %>%
+  filter(ID == id) %>%
+  filter(Relation == 'nr') %>%
+  select(RT, dprime, SOA)
+
+wr = df_summarized %>%
+  filter(ID == id) %>%
+  filter(Relation == 'WR') %>%
+  select(RT, dprime, SOA)
+
+sr$priming_effect = nr$RT - sr$RT
+wr$priming_effect  = nr$RT - wr$RT
+
+sr = sr[-3] #remove RT
+wr = wr[-3]
+df_priming_effect = rbind(df_priming_effect,as.data.frame(sr),as.data.frame(wr))
+}
+df_priming_effect = df_priming_effect[-1,]
+df_priming_effect$Relation = as.factor(df_priming_effect$Relation)
+```
+
+```{r}
+#Lets make that regression
+#One regression for every group
+mod1 = lm(data=df_priming_effect[df_priming_effect$SOA == 66,], priming_effect~dprime + Relation)
+mod2 = lm(data=df_priming_effect[df_priming_effect$SOA == 150,], priming_effect~dprime + Relation)
+mod3 = lm(data=df_priming_effect[df_priming_effect$SOA == 233,], priming_effect~dprime + Relation)
+mod4 = lm(data=df_priming_effect[df_priming_effect$SOA == 317,], priming_effect~dprime + Relation)
+
+#We change the variable that is working as baseline. In this way we get intercepts for every level of our variable Relation
+df_priming_effect$Relation = factor(df_priming_effect$Relation, levels = c('SR','WR'))
+mod1.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 66,], priming_effect~dprime + Relation)
+mod2.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 150,], priming_effect~dprime + Relation)
+mod3.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 233,], priming_effect~dprime + Relation)
+mod4.2 = lm(data=df_priming_effect[df_priming_effect$SOA == 317,], priming_effect~dprime + Relation)
+
+summary(mod1)
+summary(mod1.2)
+plot(mod1)
+plot(mod1$residuals ~ df_priming_effect[df_priming_effect$SOA == 66,]$dprime)
+abline(0,0)
+plot(mod1$residuals ~ df_priming_effect[df_priming_effect$SOA == 66,]$Relation)
+
+
+summary(mod2)
+summary(mod2.2)
+plot(mod2) #Mod 1 and 2 look normal.
+plot(mod2$residuals ~ df_priming_effect[df_priming_effect$SOA == 150,]$dprime)
+abline(0,0)
+plot(mod2$residuals ~ df_priming_effect[df_priming_effect$SOA == 150,]$Relation)
+
+summary(mod3)
+summary(mod3.2)
+plot(mod3)  #Not normally distributed
+plot(mod3$residuals ~ df_priming_effect[df_priming_effect$SOA == 233,]$dprime)
+abline(0,0)  #Awfullll!!!! need more data points
+plot(mod3$residuals ~ df_priming_effect[df_priming_effect$SOA == 233,]$Relation)
+
+summary(mod4)
+summary(mod4.2)
+plot(mod4) #Not normally
+
+#df_priming_effect$SOA = as.factor(df_priming_effect$SOA)
+#mod_full = lm(data=df_priming_effect, priming_effect~dprime + Relation + as.factor(SOA))
+#plot(mod_full)
+#summary(mod_full)
+```
 
 ```{r}
 #Using the 'ts' over RT to transform that in a time series.
