@@ -13,7 +13,7 @@ library(psycho)
 setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/')
 PATH = 'C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/'
 load(file= paste0(PATH,'dfpriming_v4.Rda'))
-summary(dfpriming)
+#summary(dfpriming)
 ```
 
 ```{r} 
@@ -49,6 +49,7 @@ levels(dfpriming$Relation)[levels(dfpriming$Relation)=="sra"] <- "SR"
 levels(dfpriming$Relation)[levels(dfpriming$Relation)=="sro"] <- "SR"
 levels(dfpriming$Relation)[levels(dfpriming$Relation)=="wra"] <- "WR"
 levels(dfpriming$Relation)[levels(dfpriming$Relation)=="wro"] <- "WR"
+dfpriming$Relation = factor(dfpriming$Relation, levels = c('nr', 'WR', 'SR'))
 
 ```
 
@@ -68,9 +69,12 @@ all_answer <- dfpriming %>%
           count(Answer)
 
 ggplot2::ggplot(data = all_answer) + geom_point(mapping = aes(x= ID, y=n, color = Answer)) + coord_flip() + facet_wrap(~SOA, scales = 'free')+  theme_classic()
+```
 
-# We can see that subjects 18_231, 8_25 and 20_38 shown a abnormal pattern of response. Asking to the experimenters they respond that this subjects mis understood the instructions and responded with opposite keys. In other words, they responded to Animals Images with the "Object key" (right control) and with the "Animal Key" (lef control) to the object images.
+# We can see that subjects 18_231, 8_25 and 20_38 shown a abnormal pattern of response. Asking to the experimenters they respond #that this subjects mis understood the instructions and responded with opposite keys. In other words, they responded to Animals #Images with the "Object key" (right control) and with the "Animal Key" (lef control) to the object images.
 
+
+```{r}
 # We would replace this
 dfpriming_corrected = dfpriming
 dfpriming_corrected$Answer = as.factor(dfpriming_corrected$Answer)
@@ -101,9 +105,11 @@ NA_by_Categoria = summaryBy(Key_pressed~Categoria, data=dffinal[is.na(dffinal$Ke
 NA_by_Categoria[c(1,8)]
 NA_by_Relation = summaryBy(Key_pressed~Relation, data=dffinal[is.na(dffinal$Key_pressed),],FUN =  summary)
 NA_by_Relation[c(1,8)]
+```
 
 # There is no evidence of preference of NA response given a specific Relationship. Given the low numbers of NA we are going to use a classical aproach and we are not going to study trials were subjects did not response.
-  
+
+```{r}  
 dffinal =  dffinal[!is.na(dffinal$RT),]
 summary(dffinal)
 save(dffinal, file= 'dffinal.Rda')
@@ -154,8 +160,10 @@ t.test(nr[nr$SOA == 150,]$dprime, mu=0)
 t.test(nr[nr$SOA == 233,]$dprime, mu=0)
 t.test(nr[nr$SOA == 317,]$dprime, mu=0)
  #Definetively problems! All the dprimesvalues are different to 0. We need to remove some subjects.
-
 ```
+
+#Definetively problems! All the dprimesvalues are different to 0. We need to remove some subjects.
+
 
 ```{r}
 # SOME ANOVAS TO CHECK GROUPS ARE OKAY
@@ -197,13 +205,21 @@ library(car)
 leveneTest(multiple_data$dprime, multiple_data$SOA, center = median) #Las variables son homogeneas!!
 #CHECK NORMALITY
 #normalidad Shapiro-Wilk
-tapply(multiple_data$dprime, multiple_data$SOA, shapiro.test) #Da normal!!!!
+tapply(multiple_data$dprime, multiple_data$SOA, shapiro.test) #Da normal!!!!psych::describe(multiple_data[multiple_data$SOA== 66,]$dprime)
+psych::describe(multiple_data[multiple_data$SOA== 150,]$dprime)
+psych::describe(multiple_data[multiple_data$SOA== 233,]$dprime)
+psych::describe(multiple_data[multiple_data$SOA== 317,]$dprime)
+```
 
-      #ANOVA for prelikert
-      #aov_likert = aov(prelikert~SOA,data= multiple_data) 
-      #summary(aov_likert)
-      #TukeyHSD(aov_likert)
+Resument hasta el momento:
+Hay diferencia entre dprime por grupo F(3,96)=22.29 p < .001.
+The bigger the SOA, the bigger the dprime. It could be interpretated as the  increase os SOA  facilitates the concious processing of the prime stimuus.
+Variables are homogeneous and groups are normal
 
+
+
+```{r}
+#NOW PRELIKERT!!
 # It does not differ! Subjective reported difference is the same among groups, BUT CHECK NORMALITY
 leveneTest(multiple_data$prelikert, multiple_data$SOA, center = median) #Las variables son homogeneas
 tapply(multiple_data$prelikert, multiple_data$SOA, shapiro.test) # Not NORMAL
@@ -216,36 +232,43 @@ psych::describe(multiple_data[multiple_data$SOA== 150,]$prelikert)
 psych::describe(multiple_data[multiple_data$SOA== 233,]$prelikert)
 psych::describe(multiple_data[multiple_data$SOA== 317,]$prelikert)
 
-psych::describe(multiple_data[multiple_data$SOA== 66,]$dprime)
-psych::describe(multiple_data[multiple_data$SOA== 150,]$dprime)
-psych::describe(multiple_data[multiple_data$SOA== 233,]$dprime)
-psych::describe(multiple_data[multiple_data$SOA== 317,]$dprime)
+
 ```
+
+Prelikert by SOA groups are homogenous (Levene test  F = 0.1087, p = 0.9548) but no normal (Shapiro Wilk tests). Given that reason, I decided to apply a non-parametric Kruskall Wallis. The Kruskall test show a statistical trend ($X^2$= 6.575, p = .079). The Wilcoxoon rank sum test shows that there are no difference between groups.
+
+
+
+
+
 
 ```{r}
 #Lets check the normality of our variables. Using df_summarized
-histogramRT<-ggplot(data = df_summarized, aes(x=dprime))+
+histogramRT<-ggplot(data = df_summarized, aes(x=dprime,colour= SOA, fill=SOA))+
   labs(x="RT")+
   ggtitle("Histogram of dPrime")+
-  geom_density( colour= "cyan4", fill="cyan1") +
-  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_summarized$dprime), sd=sd(df_summarized$dprime))) + facet_wrap(~SOA)  + theme_classic()
+  geom_density() +
+  stat_function(fun = dnorm, colour = "Black", args = list(mean=mean(df_summarized$dprime), sd=sd(df_summarized$dprime))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
 #Las varianzas son homogeneas entre los grupos pero no muy lindas
 
 
-histogramRT<-ggplot(data = df_summarized, aes(x=prelikert))+
+histogramRT<-ggplot(data = df_summarized, aes(x=prelikert, color = SOA , fill = SOA))+
   labs(x="RT")+
-  ggtitle("Histogram of prelikert")+
-  geom_density( colour= "cyan4", fill="cyan1") +
-  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_summarized$prelikert), sd=sd(df_summarized$prelikert))) + facet_wrap(~SOA)  + theme_classic()
+  ggtitle("Density  of prelikert")+
+  geom_density() +
+  stat_function(fun = dnorm, colour = "Black", args = list(mean=mean(df_summarized$prelikert), sd=sd(df_summarized$prelikert))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
 #Las varianzas son homogeneas entre los grupos pero no muy lindas
 ```
 
-Resument hasta el momento:
-Hay diferencia entre dprime por grupo 
-Hay diferencia en prelikert por grupo
-Es muy dificil afirmar que el experimento vaya a ser subliminal.
+
+Given this information we could affirm that there is statistical evidence to affirm that the different SOA interval has a diferential effect over the conciouss processing of the prime stimuli during the objective visibility test.
+If we take in count the evidence of the subjective report,  there is no evidence to claim that the suggested processed diferentially the prime stimulus during the experimental task (priming task). Given that the attention has a crucial role on conciouss processing, it could be that the short period of time (even the bigger SOA interval) combined with the focus on the processing of the target stimuli is interfering on the processing of the prime stimuli. 
+This is coherent with JaÅ›kowski & Verleger (2007). They claim that for efficient masking of the prime, the prime-target interval had to be quite short (about 50 ms). 
+
+
+
 
 ```{r}
 ggplot(data = df_summarized) + geom_boxplot(aes(x=Relation, y=RT, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
@@ -254,21 +277,30 @@ ggplot(data = df_summarized) + geom_boxplot(aes(x=as.factor(SOA), y=dprime, colo
 
 ggplot(data = df_summarized) + geom_boxplot(aes(x=as.factor(SOA), y=prelikert, color = SOA))+  theme_classic()
 
-#ggplot(data = df_summarized) + geom_density(aes(x = dprime)) #We see that there are cases that had a very good accuracy on the objective visibility test
+#ggplot(data = df_summarized) + geom_jitter(aes(x=dprime, y=RT, color = SOA))+  theme_classic() + facet_wrap(~SOA)
 
+#General linear relation
+ggplot(data = df_summarized,aes(x=dprime, y=RT, color = Relation, fill = Relation)) + geom_point()+ geom_smooth(method = lm, alpha=0.2)  +  theme_classic()
+
+ggplot(data = df_summarized,aes(x=prelikert, y=RT, color = Relation, fill = Relation)) + geom_point()+ geom_smooth(method = lm, alpha=0.2)  +  theme_classic()
+
+# Linear relations by group
+ggplot(data = df_summarized,aes(x=dprime, y=RT, color = Relation, fill = Relation)) + geom_point()+ geom_smooth(method = lm, alpha=0.2) + facet_wrap(~SOA) +  theme_classic()
+
+ggplot(data = df_summarized,aes(x=prelikert, y=RT, color = Relation, fill = Relation)) + geom_point()+ geom_smooth(method = lm, alpha=0.2) + facet_wrap(~SOA) +  theme_classic()
 ```
 
 
-Dprima claramente muestra una relacion positiva en relacion al SOA. This complicates possible asumptions about the output.
 
 
 ```{r}
+#RESPONSE TIME AND SOA------
 #Checking distribution Response time
-histogramRT<-ggplot(df_summarized, aes(x=RT))+
-  labs(x="Tiempo de reacción")+
-  ggtitle("Histograma de tiempos de reacción logaritmizados")+
-  geom_density( colour= "cyan4", fill="cyan1")+
-  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_summarized$RT), sd=sd(df_summarized$RT))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT<-ggplot(df_summarized, aes(x=RT, color = SOA , fill = SOA))+
+  labs(x="RT")+
+  ggtitle("Density plot of RT (untransformed)") +
+  geom_density( )+
+  stat_function(fun = dnorm, colour = "Black" , size = 1, args = list(mean=mean(df_summarized$RT), sd=sd(df_summarized$RT))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
 
 #Check homogeneaty
@@ -276,8 +308,12 @@ leveneTest(df_summarized$RT, df_summarized$SOA, center = median) #Las variables 
 #CHECK NORMALITY
 #normalidad Shapiro-Wilk
 tapply(df_summarized$RT, df_summarized$SOA, shapiro.test) #NO da normal!!!!
-
 ```
+
+when we checked the normality on the RT variable for the 4 groups we observed that groups are not homogeneous ( Levene test F(3,296)= 8.956, 1.069e-05 ***)
+
+
+
 ```{r}
 #LETS TRY A TRANSFORMATION OF THE DATA
 # Using logaritmic transformation
@@ -285,11 +321,11 @@ tapply(df_summarized$RT, df_summarized$SOA, shapiro.test) #NO da normal!!!!
 df_transf = df_summarized
 df_transf$RT = log10(df_transf$RT+1)
 #Checking distribution Response time
-histogramRT<-ggplot(df_transf, aes(x=RT))+
-  labs(x="Tiempo de reacción")+
-  ggtitle("Histograma de tiempos de reacción logaritmizados")+
-  geom_density( colour= "cyan4", fill="cyan1")+
-  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_transf$RT), sd=sd(df_transf$RT))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT<-ggplot(df_transf, aes(x=RT, color = SOA , fill = SOA))+
+  labs(x="RT")+
+  ggtitle("Density plot of log(RT)")+
+  geom_density()+
+  stat_function(fun = dnorm, colour = "Black", size = 1, args = list(mean=mean(df_transf$RT), sd=sd(df_transf$RT))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
 
 #Not changes
@@ -297,11 +333,11 @@ histogramRT
 #Inverse transformation
 df_inv = df_summarized
 df_inv$RT = 1/df_inv$RT 
-histogramRT<-ggplot(df_inv, aes(x=RT))+
-  labs(x="Tiempo de reacción")+
-  ggtitle("Histograma de tiempos de reacción logaritmizados")+
-  geom_density( colour= "cyan4", fill="cyan1")+
-  stat_function(fun = dnorm, colour = "Red", args = list(mean=mean(df_inv$RT), sd=sd(df_inv$RT))) + facet_wrap(~SOA)  + theme_classic()
+histogramRT<-ggplot(df_inv, aes(x=RT, color = SOA , fill = SOA))+
+  labs(x="RT")+
+  ggtitle("Density plot of Inverse tranformation(RT) ")+
+  geom_density( )+
+  stat_function(fun = dnorm, colour = "Black", size = 1, args = list(mean=mean(df_inv$RT), sd=sd(df_inv$RT))) + facet_wrap(~SOA)  + theme_classic() 
 histogramRT
 
 #Check homogeneaty
@@ -386,8 +422,7 @@ save(df_without_out_and_dprime, file = 'df_no_outliers.Rda')
 ```{r}
 #Some analysis of the Prime visibility test ----
 summary(df_without_out_and_dprime[,25:27])
-#We chose a case, if not we have our n augmented by three. In this case I chose  nr. We check for all the subjects removed
-t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime, mu=0) # T test of Dprime for all groups --> Different from 0! 
+
 summary(df_without_out_and_dprime$prelikert)
 # Despite the fact that T test is significatively, the median of the subjective visibility report (prelikert) is 2.
 ```
@@ -418,6 +453,9 @@ ggplot(data = df_without_out_and_dprime) + geom_density(aes(x = HitRate))  + the
 
 
 #ttest 
+#We chose a case, if not we have our n augmented by three. In this case I chose  nr. We check for all the subjects removed
+t.test(df_without_summarized[df_without_summarized$Relation == 'nr',]$dprime, mu=0) # T test of Dprime for all groups --> Different from 0! 
+
 nr_rem = df_without_summarized[df_without_summarized$Relation == 'nr',]
 t.test(nr_rem[nr_rem$SOA== 66,]$dprime, mu=0)
 t.test(nr_rem[nr_rem$SOA== 150,]$dprime, mu=0)
@@ -425,6 +463,9 @@ t.test(nr_rem[nr_rem$SOA== 233,]$dprime, mu=0)
 t.test(nr_rem[nr_rem$SOA== 317,]$dprime, mu=0)
 #Despite of removing all the subjects with a hit rate over 65% we only see no difference between zero a dprime for the SOA 66. This impply a serious limitation to the experimental question. We can remove more subjects. But we will lose a lot of subjects.
 ```
+
+
+#Despite of removing all the subjects with a hit rate over 65% we only see no difference between zero a dprime for the SOA 66. This impply a serious limitation to the experimental question. We can remove more subjects. But we will lose a lot of subjects.
 
 ```{r}
 # Lets plot some graphs ----
@@ -473,6 +514,8 @@ ggplot(results$means, aes(x=Relation, y=Mean, group=1, color = Relation)) +
   theme_classic()
 ```
 
+
+#The data suggest that when there is no difference among dprime and 0 (in other words, the subject did not process counciously the prime). The anova analysis reveals that there are evidence to claim a Relation effect (F(2,40) = 3.72, p = 0.032) priming effect between WR over NR ( p = 0.042) and a marginal significance among  SR over NR (p = 0.086)
 
 
 
@@ -640,6 +683,7 @@ plot(mod4) #Not normally
 #plot(mod_full)
 #summary(mod_full)
 ```
+
 
 ```{r}
 #Using the 'ts' over RT to transform that in a time series.

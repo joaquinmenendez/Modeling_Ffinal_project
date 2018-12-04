@@ -1,0 +1,425 @@
+---
+title: "Hierarchycal model"
+author: "Joaquin Menendez (jm622)"
+date: "November 27, 2018"
+output: html_document
+---
+
+```{r}
+library(doBy)
+library(plyr)
+library(ggplot2)
+library(dplyr)
+library(psycho)
+library(lme4)
+library(lattice)
+#install.packages('corrplot')
+library(corrplot)
+library(psych)
+
+
+setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/')
+load(file = 'dffinal.Rda')
+summary(dffinal)
+dffinal$Relation = factor(dffinal$Relation, levels = c('nr','WR', 'SR'))
+dffinal$Answer = factor(dffinal$Answer, levels = c('1','0'))
+dffinal$ID = as.character(levels(dffinal$ID)[dffinal$ID]) 
+dffinal$log.RT = log(dffinal$RT)
+```
+
+```{r}
+table(dffinal$SOA) #The number of trials differ given the difference in the amount of subjects per group
+#I care:
+#  similarity rt
+#  relation rt
+#  soa rt
+#  dprime rt
+#  dprime soa
+#  answer relation
+#  TRIAL RT
+#  Trial Correctas
+plot(RT~similarity+prelikert+Relation+dprime+as.factor(SOA)+Num.Trial,data = dffinal)
+plot(dprime~as.factor(SOA), data = dffinal)
+#We definetively have an effect of SOA on dprime. We cannot observe this effect on RT
+
+# RT~dprime seems to be slightly quadratic, but is not clear (maybe this is only observable for the correct answers)
+# No clear effect of relation on RT (maybe this is only observable for the correct answers)
+plot(as.factor(dffinal$ID),dffinal$RT)
+plot(dffinal$Answer,dffinal$Relation)
+plot(dffinal$Answer, dffinal$RT)
+#There is a slightly difference of correct answers depending on the relation. Subjects have more mistakes when relation is not related.
+# There is no difference between RT for correct answer or slower. This could be due to the assymetry.
+```
+
+```{r, fig.width= 8}
+#check correlations among the predictors to look for colinearity
+cor(dffinal$prelikert,dffinal$similarity)
+cor(dffinal$dprime,dffinal$similarity)
+cor(dffinal$Num.Trial,dffinal$similarity)
+cor(dffinal$prelikert,dffinal$dprime)
+cor(dffinal$prelikert,dffinal$Num.Trial)
+cor(dffinal$dprime,dffinal$Num.Trial)
+fac_to_num = dffinal$Relation
+fac_to_num = revalue(fac_to_num,c('nr' = 1, 'WR' = 2, 'SR' = 3))
+fac_to_num = as.numeric(fac_to_num)
+dffinal$Relation.num = fac_to_num
+cor(fac_to_num,dffinal$similarity)  # GREAT!
+
+
+cor.plot(dffinal[c(3,1,11,17,19,20,27,29)],n = 20, n.legend = 8, numbers = T,scale = F)
+corrplot(cor(dffinal[c(3,1,11,17,19,20,27,29)]),method = 'shade',title = 'Correlatio plot')
+```
+
+```{r}
+xyplot(RT ~ as.factor(SOA) | Answer, data = dffinal)
+xyplot(RT ~ dprime | Answer, data = dffinal)
+xyplot(RT ~ Relation | Answer, data = dffinal) #there is no clear effect of interaction
+xyplot(RT ~ similarity | Answer, data = dffinal) #It could observe a interaction between similarity and Answer
+xyplot(RT ~ Num.Trial | Answer, data = dffinal) #It does not seem to be an effect of trial
+xyplot(RT ~ dprime |as.factor(SOA) , data = dffinal)
+
+
+```
+
+```{r}
+# mean centering cuantitative trials  --- num.trial, similarity, dprime, prelikert
+dffinal$c.Num.Trial = dffinal$Num.Trial - mean(dffinal$Num.Trial)
+dffinal$c.similarity = dffinal$similarity - mean(dffinal$similarity)
+dffinal$c.dprime = dffinal$dprime - mean(dffinal$dprime) 
+dffinal$c.prelikert = dffinal$prelikert - mean(dffinal$prelikert)
+```
+
+```{r}
+#lets run a simple model to check num.trial ------
+mod0 = lm(RT~Relation+c.dprime+ as.factor(SOA)+ Answer + ID, data= dffinal)
+summary(mod0)
+#diagnostics
+plot(y = mod0$residuals, x=dffinal$c.similarity, xlab = "Similarity", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod0$residuals, x=dffinal$c.prelikert, xlab = "Likert", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod0$residuals, x=dffinal$c.dprime, xlab = "dPrime", ylab = "Residual") # maybe A quadratic relation
+abline(0,0)
+
+plot(y = mod0$residuals, x=dffinal$c.Num.Trial, xlab = "Num. Trial", ylab = "Residual")
+abline(0,0)
+
+boxplot(mod0$residuals~dffinal$Answer, xlab = "Answer", ylab = "Residual")
+abline(0,0)
+boxplot(mod0$residuals~dffinal$SOA, xlab = "SOA", ylab = "Residual")
+abline(0,0)
+
+
+#No parece que numero de trial tenga un comportamiento similar a una serie temporal.
+#Some of the variables are not defined because of singularity means that the variables are not linearly independent. If you remove the variables that are giving NA in the above summary, you will obtain the same result for the rest of the variables. This is because the information given by those variables is already contained in the other variables and thus redundant.
+```
+
+```{r}
+#lets run a  model with more variables ------
+mod1 = lm(RT~Relation+c.dprime+ as.factor(SOA)+c.Num.Trial+ Answer + ID, data= dffinal)
+summary(mod1)
+#diagnostics
+plot(y = mod1$residuals, x=dffinal$c.similarity, xlab = "Similarity", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod1$residuals, x=dffinal$c.prelikert, xlab = "Likert", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod1$residuals, x=dffinal$c.dprime, xlab = "dPrime", ylab = "Residual") # maybe A quadratic relation
+abline(0,0)
+
+plot(y = mod1$residuals, x=dffinal$c.Num.Trial, xlab = "Num. Trial", ylab = "Residual")
+abline(0,0)
+
+boxplot(mod1$residuals~dffinal$Answer, xlab = "Answer", ylab = "Residual")
+abline(0,0)
+boxplot(mod1$residuals~dffinal$SOA, xlab = "SOA", ylab = "Residual")
+abline(0,0)
+
+anova(mod0,mod1) #It  seem that num.trial is important Similar R2 but more singularities (only for subject)
+```
+
+```{r}
+plot(mod1)
+```
+
+```{r}
+# Modelo logaritmico
+# Lets check some transformations y usemos un modelo completo
+
+mod2 = lm(log.RT~c.similarity+c.prelikert+Relation+ c.dprime +  as.factor(SOA)+c.Num.Trial+ Answer + ID, data= dffinal)
+summary(mod2)
+plot(mod2)
+plot(y = mod2$residuals, x=dffinal$c.dprime, xlab = "dPrime", ylab = "Residual") # maybe A quadratic relation
+abline(0,0)
+plot(y = mod2$residuals, x=dffinal$c.similarity, xlab = "Similarity", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod2$residuals, x=dffinal$c.prelikert, xlab = "Likert", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod2$residuals, x=dffinal$c.dprime, xlab = "dPrime", ylab = "Residual") # maybe A quadratic relation
+abline(0,0)
+
+plot(y = mod2$residuals, x=dffinal$c.Num.Trial, xlab = "Num. Trial", ylab = "Residual")
+abline(0,0)
+
+boxplot(mod2$residuals~dffinal$Answer, xlab = "Answer", ylab = "Residual")
+abline(0,0)
+boxplot(mod2$residuals~dffinal$SOA, xlab = "SOA", ylab = "Residual")
+abline(0,0)
+
+xyplot(mod2$residuals ~ Num.Trial | Relation, data = dffinal) 
+xyplot(mod2$residuals ~ dprime | Relation, data = dffinal) 
+xyplot(mod2$residuals ~ SOA | Relation, data = dffinal) 
+xyplot(mod2$residuals ~ Relation | Answer, data = dffinal) #Interaccion answer relation?
+xyplot(mod2$residuals ~ Answer | Relation, data = dffinal) # no no lo creo.
+xyplot(mod2$residuals ~ Num.Trial | Relation, data = dffinal) 
+
+```
+
+
+```{r}
+# MODELO sencillo  sin num trial y similarity-----
+dffinal 
+#Modelo sin similaridad , prelikert ,numero de trial
+mod4 = lm(log.RT~Relation+ c.dprime +  as.factor(SOA)+ Answer + ID, data= dffinal)
+plot(mod4)
+summary(mod4)
+
+plot(y = mod4$residuals, x=dffinal$c.dprime, xlab = "dPrime", ylab = "Residual") # maybe A quadratic relation
+abline(0,0)
+plot(y = mod4$residuals, x=dffinal$c.similarity, xlab = "Similarity", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod4$residuals, x=dffinal$c.prelikert, xlab = "Likert", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod4$residuals, x=dffinal$c.dprime, xlab = "dPrime", ylab = "Residual") # maybe A quadratic relation
+abline(0,0)
+
+plot(y = mod4$residuals, x=dffinal$c.Num.Trial, xlab = "Num. Trial", ylab = "Residual")
+abline(0,0)
+
+boxplot(mod4$residuals~dffinal$Answer, xlab = "Answer", ylab = "Residual")
+abline(0,0)
+boxplot(mod4$residuals~dffinal$SOA, xlab = "SOA", ylab = "Residual")
+abline(0,0)
+
+anova(mod4,mod2)
+#ME GUSTA ESTE pero...
+#El anova dice que el mod 2 es mejor. 
+# 0.2373 del mod 2 vs 0.2367 del mod4
+xyplot(mod4$residuals ~ Num.Trial | Relation, data = dffinal) #Num trial se ve conservado.
+```
+
+```{r}
+#Modelo con similaridad y prelikert pero sin numero de trial
+mod5= lm(log.RT  ~ Relation+ c.prelikert + c.similarity + c.dprime +  as.factor(SOA)+ Answer + ID, data= dffinal)
+plot(mod5)
+summary(mod5)
+anova(mod4,mod5) #se ve que tener similaridad y o prelikert ayuda
+anova(mod2,mod5)  #Mod 2 sigue siendo mejor
+
+#Modelo con similaridad y numero de trial sin prelikert
+mod5.2 = lm(log.RT  ~ Relation + c.similarity + c.dprime +  as.factor(SOA)+ c.Num.Trial+ Answer + ID, data= dffinal)
+summary(mod5.2)
+
+anova(mod4,mod5.2) # se ve que similaridad tiene un efecto junto con num trial
+anova(mod5, mod5.2) #Num trial seems to have an effect y prelikert es un inutil
+anova(mod5.2,mod2)  # 0.2373 R2   no escupe resultado. muy chico la sum square. prelikert no sirve. 
+
+# 
+#             mod5.2 seria el modelo lineal final
+```
+
+
+```{r}
+summary(mod5.2)
+plot(y = mod5.2$residuals, x=dffinal$c.dprime, xlab = "dPrime", ylab = "Residual") # maybe A quadratic relation
+abline(0,0)
+plot(y = mod5.2$residuals, x=dffinal$c.similarity, xlab = "Similarity", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod5.2$residuals, x=dffinal$c.prelikert, xlab = "Likert", ylab = "Residual")
+abline(0,0)
+
+plot(y = mod5.2$residuals, x=dffinal$c.dprime, xlab = "dPrime", ylab = "Residual") # maybe A quadratic relation
+abline(0,0)
+
+plot(y = mod5.2$residuals, x=dffinal$c.Num.Trial, xlab = "Num. Trial", ylab = "Residual")
+abline(0,0)
+
+boxplot(mod5.2$residuals~dffinal$Answer, xlab = "Answer", ylab = "Residual")
+abline(0,0)
+boxplot(mod5.2$residuals~dffinal$SOA, xlab = "SOA", ylab = "Residual")
+abline(0,0)
+
+
+xyplot(mod5.2$residuals ~ Num.Trial | Relation, data = dffinal) #Num trial se ve conservado.
+
+xyplot(mod5.2$residuals ~ dprime | Relation, data = dffinal) 
+xyplot(mod5.2$residuals ~ SOA | Relation, data = dffinal) 
+xyplot(mod5.2$residuals ~ Relation | Answer, data = dffinal) #Interaccion answer relation?
+xyplot(mod5.2$residuals ~ Answer | Relation, data = dffinal) # no no lo creo.
+xyplot(mod5.2$residuals ~ Num.Trial | Relation, data = dffinal)
+```
+
+
+```{r}
+#Simplest herarchycal model 
+# != intercept by subject, same slope
+df_no_error = dffinal[dffinal$Answer == 1,]
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '66','150','233', '317'))
+df_no_error$Relation = factor(df_no_error$Relation, levels = c('nr', 'WR', 'SR'))
+
+
+H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + Num.Trial + (1|ID), data = df_no_error)
+#look at the intercepts (and the common slope) for each ID
+coef(H_difint)
+summary(H_difint)
+
+#these equal the fixed effects plus the random effect
+fixef(H_difint)
+ranef(H_difint)
+
+
+#Model with similarity instead of relation
+H_difint2 = lmer(log.RT ~ similarity * as.factor(SOA) + Num.Trial + (1|ID), data = df_no_error)
+summary(H_difint2)
+
+anova(H_difint,H_difint2)
+```
+
+
+```{r}
+#herarchycal model  with != intercept by subject, different slop by treatment.
+# != intercept by subject, same slope
+df_no_error = dffinal[dffinal$Answer == 1,]
+df_no_error$SOA = as.factor(df_no_error$SOA)
+
+H_difint_difslope = lmer(log.RT ~ Relation * SOA + Num.Trial + (1+ SOA |ID), data = df_no_error)
+#look at the intercepts (and the common slope) for each ID
+coef(H_difint_difslope)
+
+#these equal the fixed effects plus the random effect
+summary(H_difint_difslope)
+fixef(H_difint_difslope)
+ranef(H_difint_difslope)
+
+
+
+#Same model but with similarity instead of relation
+H_difint_difslope2 = lmer(log.RT ~ similarity * SOA + Num.Trial + (1+ SOA |ID), data = df_no_error)
+summary(H_difint_difslope2)
+
+anova(H_difint_difslope, H_difint_difslope2)
+anova(H_difint, H_difint_difslope) #we would chose the first model givne the simplicity
+```
+
+
+
+Winning model! 
+H_difint
+
+
+```{r}
+#graphing some things
+#plot residuals versus predictors
+plot(H_difint)
+
+plot(y = residuals(H_difint), x = df_no_error$Relation, xlab= "Relation", ylab = "Residuals")
+abline(0,0)
+plot(y = residuals(H_difint), x = df_no_error$SOA, xlab= "Relation", ylab = "Residuals")
+abline(0,0)
+plot(y = residuals(H_difint), x = df_no_error$Num.Trial, xlab= "Relation", ylab = "Residuals")
+abline(0,0)
+
+#predictor not used
+plot(y = residuals(H_difint), x = df_no_error$similarity, xlab= "Relation", ylab = "Residuals")
+abline(0,0)
+plot(y = residuals(H_difint), x = df_no_error$dprime, xlab= "Relation", ylab = "Residuals")
+abline(0,0)
+
+
+#how about interactions?
+
+xyplot(residuals(H_difint) ~ as.factor(Relation) | SOA, data = df_no_error)
+xyplot(residuals(H_difint) ~ Num.Trial | as.factor(SOA), data = df_no_error)
+xyplot(residuals(H_difint) ~ SOA | Relation, data = df_no_error)
+
+#predictor not used
+xyplot(residuals(H_difint) ~ similarity | SOA, data = df_no_error)
+xyplot(residuals(H_difint) ~ dprime | SOA , data = df_no_error) #Thats a good reason to noy use it.
+```
+
+```{r}
+
+# Ploting per subject
+intercepts = ranef(H_difint)
+#View(intercepts[['ID']])  Look for the biggest and smallest intercept
+index = df_no_error$ID == '317_11_30'
+
+plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Num.Trial, xlab = 'Num Trials', ylab = 'Residuals')
+abline(0,0)
+plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Relation, xlab = 'Relations', ylab = 'Residuals')
+plot(y = residuals(H_difint)[index], x = df_no_error[index,]$SOA, xlab = 'SOA', ylab = 'Residuals') #what this would mean?
+xyplot(residuals(H_difint)[index] ~ df_no_error[index,]$Num.Trial | Relation,  data = df_no_error)
+abline(0,0)
+
+
+index = df_no_error$ID == '317_11_25'
+
+plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Num.Trial, xlab = 'Num Trials', ylab = 'Residuals')
+abline(0,0)
+plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Relation, xlab = 'Relations', ylab = 'Residuals')
+
+xyplot(residuals(H_difint)[index] ~ df_no_error[index,]$Num.Trial | Relation,  data = df_no_error)
+abline(0,0)
+
+#One good
+index = df_no_error$ID ==  '233_19_19'
+plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Num.Trial, xlab = 'Num Trials', ylab = 'Residuals')
+abline(0,0)
+plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Relation, xlab = 'Relations', ylab = 'Residuals')
+xyplot(residuals(H_difint)[index] ~ df_no_error[index,]$Num.Trial | Relation,  data = df_no_error)
+
+```
+
+```{r}
+#average of each trial 
+```
+
+
+
+
+```{r}
+#SOME GRAPHS --------
+
+  ggplot(data=df_no_error) + geom_jitter(aes(y = RT, x = as.factor(Relation), color = as.factor(Relation))) + theme_classic() + geom_smooth(aes(Relation, RT),method = lm, se = T ) + facet_wrap(~SOA)
+
+ggplot(data=df_no_error) + geom_jitter(aes(y = RT, x = similarity, color = similarity)) + theme_classic() + geom_smooth(aes(similarity, RT),method = lm, se = T ) + facet_wrap(~SOA)
+
+ggplot(data=df_no_error) + geom_boxplot(aes(y = RT, x = similarity, color = as.factor(similarity))) + theme_classic()  + facet_wrap(~SOA)
+ggplot(data=df_no_error) + geom_boxplot(aes(y = RT, x = as.factor(Relation), color = as.factor(Relation))) + theme_classic() + geom_smooth(aes(Relation, RT),method = lm, se = T ) + facet_wrap(~SOA)
+```
+
+
+
+
+
+```{r} 
+# Maybe a logistic regression
+dffinal.log = dffinal
+dffinal.log$SOA = factor(dffinal.log$SOA, levels = c('317', '66','150','233' ))
+dffinal.log$Relation = factor(dffinal.log$Relation, levels = c('nr', 'WR', 'SR'))
+h.log = lmer(as.numeric(Answer) ~ Relation * as.factor(SOA) + Num.Trial + (1 | ID), data = dffinal.log)
+summary(h.log)
+
+
+h.log = lmer(as.numeric(Answer) ~ similarity * as.factor(SOA) + Num.Trial + (1 + SOA | ID), data = dffinal.log)
+summary(h.log)
+```
+
