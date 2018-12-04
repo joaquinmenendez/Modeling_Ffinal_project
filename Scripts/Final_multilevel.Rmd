@@ -125,12 +125,31 @@ df_no_error$SOA = factor(df_no_error$SOA, levels = c( '66','150','233','317'))
 df_no_error$Relation = factor(df_no_error$Relation, levels = c('nr', 'WR', 'SR'))
 df_no_error$ID = as.factor(df_no_error$ID)
 
+H_simple = lmer(log.RT ~ Relation * as.factor(SOA)  + (1|ID), data = df_no_error)
+summary(H_simple)
+
 
 H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) #try a simple without num
 #look at the intercepts (and the common slope) for each ID
     #coef(H_difint)
 summary(H_difint)
+anova(H_simple,H_difint)
+```
 
+summary(df_no_error[df_no_error$Num.Trial < 10,]$RT) 
+Min.		  1st Qu.		Median		Mean		  3rd Qu.		Max.
+0.2909		0.4526		0.5128		0.5357		0.5875		1.6961 
+
+
+summary(df_no_error[df_no_error$Num.Trial > 245,]$RT)
+Min. 		  1st Qu.		Median		Mean		  3rd Qu.		Max.
+0.2755 		0.4677		0.5269		0.5532		0.6035		1.3943
+
+
+It seems that the subjects experience some fatigue after the large amount of trials.
+The inclusion of Num. of trials seems to improbe the model, so we are going to incorporate this variable.
+
+```{r}
 #these equal the fixed effects plus the random effect
 fixef(H_difint)
 ranef(H_difint)
@@ -140,14 +159,15 @@ ranef(H_difint)
 H_difint2 = lmer(log.RT ~ similarity * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error)
 summary(H_difint2)
 fixef(H_difint2)
-anova(H_difint,H_difint2)
 
+
+anova(H_difint,H_difint2)
 ```
 
 We applied an Anova to see if the similarity measure used after the experimental task was a useful predictor in comparision with a model using the a-priori defined relation (Relation variable). There is statisticall evidence of a better eficacy of the former model. $X^2$= 21.0, p < .001
 
 We need to remark that similarity is indeed a useful predictor   EXPLANATION IN THIS CASE OF HOW MUCH REDUCE RT.
-The fact that Relation is better could be due to several reasons. Having time to think (as in the case of the Similarity task compared to the experimental task) about a relation between two stimulus could bias the answers. Subjects could response using complex reasoning. It's possible that this reasoning not be present during a subliminal processing. In this sense, we could agree with the 'Wisdom of  the multitudes'. In other words, multitudes known better us that ourselves.
+The fact that Relation is better could be due to several reasons. Having time to think (as in the case of the Similarity task compared to the experimental task) about a relation between two stimulus could bias the answers. Subjects could response using complex reasoning. It's possible that this reasoning not be present during a subliminal processing. In this sense, we could agree with the 'Wisdom of  the crows'. In other words, multitudes known better us that ourselves.
 
 ```{r}
 #herarchycal model  with != intercept by subject, different slope by treatment.
@@ -173,7 +193,7 @@ anova(H_difint, H_difint_difslope) #we would chose the first model given the sim
 ```
 
 
-We would chose the first model given the simplicity
+We would chose the first model given the simplicity, and because honestly I don't really understand what the other model is doing.
 
 
 ```{r}
@@ -193,8 +213,10 @@ plot(y = residuals(H_difint), x = df_no_error$similarity, xlab= "Relation", ylab
 abline(0,0)
 plot(y = residuals(H_difint), x = df_no_error$dprime, xlab= "Relation", ylab = "Residuals")
 abline(0,0)
+```
 
 
+```{r}
 #how about interactions?
 
 xyplot(residuals(H_difint) ~ as.factor(Relation) | SOA, data = df_no_error)
@@ -207,8 +229,38 @@ xyplot(residuals(H_difint) ~ dprime | SOA , data = df_no_error) #Thats a good re
 ```
 
 
+```{r}
+#INSERT GRAPH WITH COEF INTERVAL HERE  ------
+install.packages('influence.ME')
+library(influence.ME)
+summary(H_difint)
+coef = as.numeric(fixef(H_difint)[-1])
+conditions = factor(c("WR","SR","SOA 150","SOA 233","SOA 317","Num.Trial","WR:SOA 150","SR:SOA 150","WR:SOA 233","SR:SOA 233","WR:SOA 317","SR:SOA 317"),levels = c("WR","SR","SOA 150","SOA 233","SOA 317","Num.Trial","WR:SOA 150","SR:SOA 150","WR:SOA 233","SR:SOA 233","WR:SOA 317","SR:SOA 317"))
+colores = c(1,1,0,0,0,0,0,0,0,0,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+```
 
-INSERT GRAPH WITH COEF INTERVALSHERE ******* 
+```{r,fig.width= 9}
+# 95 confindence interval multilevel model H_difint -----
+
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', y='95% CI of Slope') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+
+
+```
+
+
+
+
+
+
+
 
 
 

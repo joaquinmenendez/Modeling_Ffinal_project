@@ -211,10 +211,9 @@ psych::describe(multiple_data[multiple_data$SOA== 233,]$dprime)
 psych::describe(multiple_data[multiple_data$SOA== 317,]$dprime)
 ```
 
-Resument hasta el momento:
-Hay diferencia entre dprime por grupo F(3,96)=22.29 p < .001.
+Variables are homogeneous (Levene Test F = 2.0749, p = 0.1086), and groups follow a normal distribution (Shapiro Wilk test, ps > .05 for all groups).
+There is statistical evidence of a diference among dprime per group F(3,96)=22.29 p < .001.
 The bigger the SOA, the bigger the dprime. It could be interpretated as the  increase os SOA  facilitates the concious processing of the prime stimuus.
-Variables are homogeneous and groups are normal
 
 
 
@@ -235,29 +234,26 @@ psych::describe(multiple_data[multiple_data$SOA== 317,]$prelikert)
 
 ```
 
-Prelikert by SOA groups are homogenous (Levene test  F = 0.1087, p = 0.9548) but no normal (Shapiro Wilk tests). Given that reason, I decided to apply a non-parametric Kruskall Wallis. The Kruskall test show a statistical trend ($X^2$= 6.575, p = .079). The Wilcoxoon rank sum test shows that there are no difference between groups.
-
-
-
+Prelikert by SOA groups are homogenous (Levene test  F = 0.1087, p = 0.9548) but not follow a normal distribution (Shapiro Wilk test, ps < .01). Given that reason, I decided to apply a non-parametric Kruskall Wallis. The Kruskall test show a statistical trend ($X^2$= 6.575, p = .079). The Wilcoxoon rank sum test shows that there are no difference between groups. We could claim that there are no evidence of difference among groups for prelikert values.
 
 
 
 ```{r}
 #Lets check the normality of our variables. Using df_summarized
-histogramRT<-ggplot(data = df_summarized, aes(x=dprime,colour= SOA, fill=SOA))+
+histogramRT<-ggplot(data = df_summarized, aes(x=dprime, fill=SOA))+
   labs(x="RT")+
   ggtitle("Histogram of dPrime")+
-  geom_density() +
-  stat_function(fun = dnorm, colour = "Black", args = list(mean=mean(df_summarized$dprime), sd=sd(df_summarized$dprime))) + facet_wrap(~SOA)  + theme_classic()
+  geom_density(color= 'black') +
+  stat_function(fun = dnorm, colour = "Black",linetype = 2,size = 1 ,args = list(mean=mean(df_summarized$dprime), sd=sd(df_summarized$dprime))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
 #Las varianzas son homogeneas entre los grupos pero no muy lindas
 
 
-histogramRT<-ggplot(data = df_summarized, aes(x=prelikert, color = SOA , fill = SOA))+
+histogramRT<-ggplot(data = df_summarized, aes(x=prelikert, fill = SOA))+
   labs(x="RT")+
   ggtitle("Density  of prelikert")+
-  geom_density() +
-  stat_function(fun = dnorm, colour = "Black", args = list(mean=mean(df_summarized$prelikert), sd=sd(df_summarized$prelikert))) + facet_wrap(~SOA)  + theme_classic()
+  geom_density(color= 'black') +
+  stat_function(fun = dnorm, colour = "Black",linetype = 2,size = 1, args = list(mean=mean(df_summarized$prelikert), sd=sd(df_summarized$prelikert))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
 #Las varianzas son homogeneas entre los grupos pero no muy lindas
 ```
@@ -270,7 +266,9 @@ This is coherent with Jaśkowski & Verleger (2007). They claim that for efficien
 
 
 
-```{r}
+```{r, fig.width= 9}
+#Exploratory data  graphics -----------
+
 ggplot(data = df_summarized) + geom_boxplot(aes(x=Relation, y=RT, color = Relation)) + facet_wrap(~SOA, ncol = 4)+  theme_classic()
 
 ggplot(data = df_summarized) + geom_boxplot(aes(x=as.factor(SOA), y=dprime, color = SOA)) +  theme_classic()
@@ -294,7 +292,7 @@ ggplot(data = df_summarized,aes(x=prelikert, y=RT, color = Relation, fill = Rela
 
 
 ```{r}
-#RESPONSE TIME AND SOA------
+#RESPONSE TIME AND SOA GROUPS ------
 #Checking distribution Response time
 histogramRT<-ggplot(df_summarized, aes(x=RT, color = SOA , fill = SOA))+
   labs(x="RT")+
@@ -310,8 +308,7 @@ leveneTest(df_summarized$RT, df_summarized$SOA, center = median) #Las variables 
 tapply(df_summarized$RT, df_summarized$SOA, shapiro.test) #NO da normal!!!!
 ```
 
-when we checked the normality on the RT variable for the 4 groups we observed that groups are not homogeneous ( Levene test F(3,296)= 8.956, 1.069e-05 ***)
-
+When we checked the normality on the RT variable for the treatment groups we observed that the groups are not homogeneous (Levene test F(3,296)= 8.956, p < .001) and also dont follow a normal distribution (Shapiro Walk test, ps < .05 for all groups)
 
 
 ```{r}
@@ -327,17 +324,18 @@ histogramRT<-ggplot(df_transf, aes(x=RT, color = SOA , fill = SOA))+
   geom_density()+
   stat_function(fun = dnorm, colour = "Black", size = 1, args = list(mean=mean(df_transf$RT), sd=sd(df_transf$RT))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
-
 #Not changes
+```
 
-#Inverse transformation
+```{r}
+#Inverse transformation ----
 df_inv = df_summarized
 df_inv$RT = 1/df_inv$RT 
-histogramRT<-ggplot(df_inv, aes(x=RT, color = SOA , fill = SOA))+
+histogramRT<-ggplot(df_inv, aes(x=RT, fill = SOA))+
   labs(x="RT")+
   ggtitle("Density plot of Inverse tranformation(RT) ")+
-  geom_density( )+
-  stat_function(fun = dnorm, colour = "Black", size = 1, args = list(mean=mean(df_inv$RT), sd=sd(df_inv$RT))) + facet_wrap(~SOA)  + theme_classic() 
+  geom_density(color = 'black')+
+  stat_function(fun = dnorm, colour = "Black", size = 1, linetye= 2, args = list(mean=mean(df_inv$RT), sd=sd(df_inv$RT))) + facet_wrap(~SOA)  + theme_classic() 
 histogramRT
 
 #Check homogeneaty
@@ -348,28 +346,82 @@ tapply(df_inv$RT, df_inv$SOA, shapiro.test) #NO da normal!!!!
 
 ```
 
+I tried to apply logaritmic and inverse transformation to the data in order to homogenize the data. Despiste that the variance among groups remained different. The original intention was to realize a Mixed design ANOVA 4x3 where:
+IV between: SOA
+IV within:  Relation
+DV:         RT
 
-```{r}
-#Despite that it does not give me normal results I would run an anova anyway
-#Mixed design ANOVA -----
-# 4x3 mixed:
-# IV between: SOA
-# IV within:  Relation
-# DV: RT
+Given the urrents limitations, I would use a multilevel model for repeated mesures. This model would allow to work with normally distributed data given the fact that it will not be necessary to average the RT of each subject per condition, allowing to work with all the trials of each subject. 
+=This would allow to respond the answer of the role of the treatment group an the possible interactions with the semantic relatedness. 
 
-aov_RT <- aov(RT ~ SOA*Relation + Error(ID/Relation), data=df_summarized)
-summary(aov_RT)
 
-#other anova
+
+```{R}
+#LETS MAKE A NON PARAMETRIC ONE FACTOR  or friedman.test TO EVALUATE THE RELATEDNESS EFFECT ON EVERY GROUP 
+library(lmerTest)  #https://www.r-bloggers.com/how-to-do-repeated-measures-anovas-in-r/
+library(psycho)
+library(psych)
+library(lme4)
+
+
+
+df_summarized$Relation = factor(df_summarized$Relation, levels = c('nr','WR', 'SR'))
+df_summarized$ID = as.character(df_summarized$ID)
+
+
+friedman.test(RT ~ Relation|ID, data = df_summarized[df_summarized$SOA == '66',])  
+#### or an alternative is to apply a rank to the VD and perform an ANOVA
+rRT = rank(s66$RT)
+a66 = aov(rRT ~ Relation + Error(ID/Relation), data =s66)
+summary(a66)
+ao66 = lmer(rRT~Relation + (1|ID), data = s66)
+anova(ao66)
+#############
+friedman.test(RT ~ Relation|ID, data = df_summarized[df_summarized$SOA == '150',])  
+
+friedman.test(RT ~ Relation|ID, data = df_summarized[df_summarized$SOA == '233',])  
+
+friedman.test(RT ~ Relation|ID, data = df_summarized[df_summarized$SOA == '317',])  
+#dffinal %>% group_by(SOA, Relation) %>% summarise(meanRT = mean((RT)), sd = sd((RT)))
+
+ggplot(data= dffinal, aes(x=Relation, y=RT, fill = Relation)) + geom_bar(position = 'dodge', stat = 'summary' ,color= 'black') + facet_wrap(~SOA) + theme_classic() + coord_cartesian(ylim = c(0.4, 0.6))
 
 ```
 
-EN resumen no se puede usar anova y los datos no son muy alentadores
+ analysis don't show statistical evidence of difference by Relation condition.
+
+
+```{r}
+ggplot(results$means, aes(x=Relation, y=Mean, group=1, color = Relation)) +
+  geom_line(color = 'Black', size = 1) +
+  geom_pointrange(aes(ymin=CI_lower, ymax=CI_higher)) +
+    ylab("RT") +
+  xlab("Relation") +
+  theme_classic()
+```
+
+
 
 ```{r, fig.width= 10, fig.height= 8}
+#Other possible graphics
 ggplot(data = df_summarized) + geom_point(aes(x=dprime, y=RT, color = Relation) , position = 'jitter') + facet_wrap(~SOA, ncol = 2) + theme_light() 
 ggplot(data = df_summarized) + geom_point(aes(x=dprime, y=RT, color = SOA) , position = 'jitter') + facet_wrap(~Relation, ncol = 3) + theme_light() 
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
