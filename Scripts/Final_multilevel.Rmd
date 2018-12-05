@@ -1,11 +1,16 @@
 ---
-title: "Hierarchycal model"
+title: "Final Project"
 author: "Joaquin Menendez (jm622)"
-date: "November 27, 2018"
-output: html_document
----
+date: "December 4, 2018"
+output:
 
-```{r}
+subtitle: 'Multilevel Modeling'
+---
+# Influence of Semantic Similarity and Stimulus Onset Asynchrony on Semantic Subliminal Processing 
+>##### *Studies employing a masked priming paradigm have observed that subliminal stimuli could be processed on a semantic level.  Semantic categorization of a consciously perceived stimulus could be facilitated by the presentation of a former stimulus that was not consciously perceived (subliminal). This facilitation is usually measured as the reaction time employed to respond to a task. When this facilitation occurs between congruent pairs of stimuli (from the same category) and does not occur between incongruent pairs (from different categories) is called congruency priming effect. Two principal factors modulate the subliminal priming effect, the semantic similarity between stimuli and the SOA.  Semantic similarity refers to the similarity in meaning or overlap of features between two words. The greater the similarity, the bigger the facilitation. Another factor that modulates priming effect is the interval between the onset of the first stimulus and the onset of the second stimulus of the par (SOA: stimulus onset asynchrony), showing that the bigger the SOA, the lower priming effect. Despite the fact that these two phenomena have been extensively studied, it has not been studied the influence of semantic strength has not been studied together with SOA duration. The goal of this study is to observe if semantic relatedness (strongly and weakly related pairs) could modulate congruency priming effect duration. To evaluate this, both semantic relatedness (strong and weak) and SOA were manipulated in a subliminal semantic priming task.*<
+
+
+```{r include=FALSE}
 library(doBy)
 library(plyr)
 library(ggplot2)
@@ -16,7 +21,9 @@ library(lattice)
 #install.packages('corrplot')
 library(corrplot)
 library(psych)
-
+library(knitr)
+library(influence.ME)
+opts_chunk$set(fig.show = "hold")
 
 setwd('C:/Users/joaqu/OneDrive/Escritorio/702 Modeling and Representation of Data/Modeling_final_project/PROYECTO SOA/')
 load(file = 'dffinal.Rda')
@@ -27,7 +34,7 @@ dffinal$ID = as.character(levels(dffinal$ID)[dffinal$ID])
 dffinal$log.RT = log(dffinal$RT)
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 table(dffinal$SOA) #The number of trials differ given the difference in the amount of subjects per group
 #I care:
 #  similarity rt
@@ -38,45 +45,52 @@ table(dffinal$SOA) #The number of trials differ given the difference in the amou
 #  answer relation
 #  TRIAL RT
 #  Trial Correctas
-plot(RT~similarity+prelikert+Relation+dprime+as.factor(SOA)+Num.Trial,data = dffinal)
-plot(dprime~as.factor(SOA), data = dffinal)
-#We definetively have an effect of SOA on dprime. We cannot observe this effect on RT
-
-# RT~dprime seems to be slightly quadratic, but is not clear (maybe this is only observable for the correct answers)
-# No clear effect of relation on RT (maybe this is only observable for the correct answers)
-plot(as.factor(dffinal$ID),dffinal$RT)
-plot(dffinal$Answer,dffinal$Relation)
-plot(dffinal$Answer, dffinal$RT)
-#There is a slightly difference of correct answers depending on the relation. Subjects have more mistakes when relation is not related.
-# There is no difference between RT for correct answer or slower. This could be due to the assymetry.
 ```
 
-```{r, fig.width= 9}
+Exploratory analysis of the selected variable
+```{r}
+par(mfrow=c(2,2))
+plot(RT~similarity+prelikert+Relation+dprime+as.factor(SOA)+Num.Trial,data = dffinal)
+plot(dprime~as.factor(SOA), data = dffinal)
+#We definetively have an effect of SOA on dprime. We dont observe this effect of dprime nor SOA over RT.
+# No clear effect of relation on RT (maybe this is only observable for the correct answers)
+
+plot(as.factor(dffinal$ID),dffinal$RT)
+plot(dffinal$Answer,dffinal$Relation)
+#There is a slightly difference of correct answers depending on the relation. Subjects have more mistakes when relation is not related.
+# This could be model with a logistic regression in a future approach, for this analysis we are only going to use correct responses.
+```
+
+```{r ,include=FALSE}
 #check correlations among the predictors to look for colinearity
 cor(dffinal$prelikert,dffinal$similarity)
+cor(dffinal$SOA, dffinal$dprime,method = 'spearman')
 cor(dffinal$dprime,dffinal$similarity)
 cor(dffinal$Num.Trial,dffinal$similarity)
 cor(dffinal$prelikert,dffinal$dprime)
 cor(dffinal$prelikert,dffinal$Num.Trial)
 cor(dffinal$dprime,dffinal$Num.Trial)
-Relation_num = dffinal$Relation
-Relation_num = revalue(Relation_num,c('nr' = 1, 'WR' = 2, 'SR' = 3))
-Relation_num = as.numeric(Relation_num)
-dffinal$Relation_num = Relation_num
-cor(Relation_num,dffinal$similarity)  # GREAT!
-
-
-cor.plot(dffinal[c(3,1,11,17,19,20,27,30)],n = 20, n.legend = 8, numbers = T,scale = F)
-corrplot(cor(dffinal[c(3,1,11,17,19,20,27,28,30)]),method = 'shade',title = 'Correlatio plot')
+Relation. = dffinal$Relation
+Relation. = revalue(Relation.,c('nr' = 1, 'WR' = 2, 'SR' = 3))
+Relation. = as.numeric(Relation.)
+dffinal$Relation. = Relation.
+cor(Relation.,dffinal$similarity)  # GREAT!
 ```
 
+Correlation Plot
+```{r, fig.width= 10}
+cor.plot(dffinal[c(1,11,17,19,20,27,30)],n = 20, n.legend = 8, numbers = T,scale = F)
+#corrplot(cor(dffinal[c(3,1,11,17,19,20,27,28,30)]),method = 'shade',title = 'Correlatio plot')
+```
+
+Residuals plots
 ```{r}
-xyplot(RT ~ as.factor(SOA) | Answer, data = dffinal)
-xyplot(RT ~ dprime | Answer, data = dffinal)
-xyplot(RT ~ Relation | Answer, data = dffinal) #there is no clear effect of interaction
-xyplot(RT ~ similarity | Answer, data = dffinal) #It could observe a interaction between similarity and Answer
-xyplot(RT ~ Num.Trial | Answer, data = dffinal) #It does not seem to be an effect of trial
+par(mfrow=c(2,2))
 xyplot(RT ~ dprime |as.factor(SOA) , data = dffinal)
+xyplot(RT~as.factor(ID) | as.factor(SOA), data = dffinal)
+xyplot(RT ~ Relation |as.factor(SOA) , data = dffinal)
+xyplot(RT ~ dprime | Relation , data = dffinal) #It seems to be a sligthly reduction of time in the RT given the dprime value for each level of relation but honestly it is not really clear.
+
 ```
 
 ```{r}
@@ -87,11 +101,17 @@ dffinal$c.dprime = dffinal$dprime - mean(dffinal$dprime)
 dffinal$c.prelikert = dffinal$prelikert - mean(dffinal$prelikert)
 ```
 
-```{r}
+# Trying to fit a clasical linear regression
+```{r eval=FALSE, include=FALSE}
 #lets run a simple model to check num.trial ------
 mod0 = lm(RT~Relation+c.dprime+ as.factor(SOA)+ Answer + ID, data= dffinal)
 summary(mod0)
+```
+
+```{r eval=FALSE, include=FALSE}
 #diagnostics
+par(mfrow=c(2,2))
+
 plot(y = mod0$residuals, x=dffinal$c.similarity, xlab = "Similarity", ylab = "Residual")
 abline(0,0)
 
@@ -109,13 +129,16 @@ abline(0,0)
 boxplot(mod0$residuals~dffinal$SOA, xlab = "SOA", ylab = "Residual")
 abline(0,0)
 
-
-#No parece que numero de trial tenga un comportamiento similar a una serie temporal.
 #Some of the variables are not defined because of singularity means that the variables are not linearly independent. If you remove the variables that are giving NA in the above summary, you will obtain the same result for the rest of the variables. This is because the information given by those variables is already contained in the other variables and thus redundant.
 ```
 
 Trying to fit a linear regression  fail, given the collinearity of my variables.
-#Some of the variables are not defined because of singularity means that the variables are not linearly independent. If you remove the variables that are giving NA in the above summary, you will obtain the same result for the rest of the variables. This is because the information given by those variables is already contained in the other variables and thus redundant.
+Some of the variables are not defined because of singularity, means that the variables are not linearly independent. If you remove the variables that are giving NA in the above summary, you will obtain the same result for the rest of the variables. This is because the information given by those variables is already contained in the other variables and thus redundant. This is the limitation of using a linear regression with so many repeated observations. 
+
+Given this limitation we would proceed with a multilevel design.
+
+# Multilevel Model 1 - Different intercept
+$Y_{ij} = \alpha_{j[i]} + \beta1_i * \beta2_{j[i]} + \epsilon_i$
 
 ```{r}
 #Simplest herarchycal model 
@@ -127,48 +150,51 @@ df_no_error$ID = as.factor(df_no_error$ID)
 
 H_simple = lmer(log.RT ~ Relation * as.factor(SOA)  + (1|ID), data = df_no_error)
 summary(H_simple)
+```
 
-
+# Multilevel Model 2 - Different intercept (with Num.trial)
+$Y_{ij} = \alpha_{j[i]} + \beta1_i * \beta2_{j[i]} + \beta_i+ \epsilon_i$
+```{r}
 H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) #try a simple without num
 #look at the intercepts (and the common slope) for each ID
     #coef(H_difint)
 summary(H_difint)
+#We would like to compare models
 anova(H_simple,H_difint)
 ```
 
-summary(df_no_error[df_no_error$Num.Trial < 10,]$RT) 
-Min.		  1st Qu.		Median		Mean		  3rd Qu.		Max.
-0.2909		0.4526		0.5128		0.5357		0.5875		1.6961 
-
-
-summary(df_no_error[df_no_error$Num.Trial > 245,]$RT)
-Min. 		  1st Qu.		Median		Mean		  3rd Qu.		Max.
-0.2755 		0.4677		0.5269		0.5532		0.6035		1.3943
-
-
-It seems that the subjects experience some fatigue after the large amount of trials.
+The F-nested Test present evidence to reject the null hypothesis that both models are equal good to describe the data.
+The inclusion of the variable Num.Trial in model 2, allow us to better describe the data ($X^2$ = 17.855, p < .001).
+It seems that  subjects experience  fatigue after the large amount of trials,  this data is congruent with the scientific knowledge.
 The inclusion of Num. of trials seems to improbe the model, so we are going to incorporate this variable.
 
-```{r}
-#these equal the fixed effects plus the random effect
+```{r eval=FALSE, include=FALSE}
+#These equal the fixed effects plus the random effect
 fixef(H_difint)
-ranef(H_difint)
+#ranef(H_difint)
+```
 
-
+# Multilevel Model 2 - Different intercept (with Similarity instead of Relation)
+```{r}
 #Model with similarity instead of relation
-H_difint2 = lmer(log.RT ~ similarity * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error)
+H_difint2 = lmer(log.RT ~ c.similarity * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error)
 summary(H_difint2)
-fixef(H_difint2)
-
+#fixef(H_difint2)
 
 anova(H_difint,H_difint2)
 ```
 
-We applied an Anova to see if the similarity measure used after the experimental task was a useful predictor in comparision with a model using the a-priori defined relation (Relation variable). There is statisticall evidence of a better eficacy of the former model. $X^2$= 21.0, p < .001
+We applied an F-nested Test to see if the similarity measure used after the experimental task was a useful predictor in comparision with a model using the a-priori defined relation (Relation variable). There is statisticall evidence of a better desription of the data for the former model ($X^2$= 21.0, p < .001).
 
-We need to remark that similarity is indeed a useful predictor   EXPLANATION IN THIS CASE OF HOW MUCH REDUCE RT.
+We need to remark that similarity is indeed a useful predictor. In this case we could claim that for a subject with an average number of trial, the Response time for a trials will be reduced by a multiple of $e^-0.004069$ = 0.995 for every one unit increase on similarity (aproximately 4 ms reduction in RT, a very subtle effect)
+
 The fact that Relation is better could be due to several reasons. Having time to think (as in the case of the Similarity task compared to the experimental task) about a relation between two stimulus could bias the answers. Subjects could response using complex reasoning. It's possible that this reasoning not be present during a subliminal processing. In this sense, we could agree with the 'Wisdom of  the crows'. In other words, multitudes known better us that ourselves.
 
+Another possibility is that given that each subject reported a value of simmilarity, in other words the value is not fixed for all subjects, and the fact that ID as Random group includes the variability of the subject this effect was already covered by the random group. 
+
+
+
+# Model 3 - Different slope and different intercept
 ```{r}
 #herarchycal model  with != intercept by subject, different slope by treatment.
 # != intercept by subject, same slope
@@ -181,25 +207,32 @@ H_difint_difslope = lmer(log.RT ~ Relation * SOA + c.Num.Trial + (1+ SOA |ID), d
 
 #these equal the fixed effects plus the random effect
 summary(H_difint_difslope)
-fixef(H_difint_difslope)
-ranef(H_difint_difslope)
+#fixef(H_difint_difslope)
+#ranef(H_difint_difslope)
+```
 
+# Model 3 - Different slope and different intercept( with Similarity instead of Relation)
+```{r}
 #Same model but with similarity instead of relation
-H_difint_difslope2 = lmer(log.RT ~ similarity * SOA + c.Num.Trial + (1+ SOA |ID), data = df_no_error)
+H_difint_difslope2 = lmer(log.RT ~ c.similarity * SOA + c.Num.Trial + (1+ SOA |ID), data = df_no_error)
 summary(H_difint_difslope2)
+```
 
-anova(H_difint_difslope, H_difint_difslope2)
+# Comparing models
+```{r}
+#anova(H_difint_difslope, H_difint_difslope2)
 anova(H_difint, H_difint_difslope) #we would chose the first model given the simplicity
 ```
 
+The F-nestd Test do not present statistical evidence of a difference between model 2 and 3 ($X^2$ = 7.69, p = 0.56).
+We would chose the first model given the simplicity, and because honestly It is  difficult to understand what the other model is doing.
 
-We would chose the first model given the simplicity, and because honestly I don't really understand what the other model is doing.
 
-
+# Residuals plots Model 2
 ```{r}
 #graphing some things
 #plot residuals versus predictors
-plot(H_difint)
+par(mfrow=c(2,2))
 
 plot(y = residuals(H_difint), x = df_no_error$Relation, xlab= "Relation", ylab = "Residuals")
 abline(0,0)
@@ -207,16 +240,20 @@ plot(y = residuals(H_difint), x = df_no_error$SOA, xlab= "Relation", ylab = "Res
 abline(0,0)
 plot(y = residuals(H_difint), x = df_no_error$Num.Trial, xlab= "Relation", ylab = "Residuals")
 abline(0,0)
+```
 
+```{r}
 #predictor not used
+par(mfrow=c(2,2))
 plot(y = residuals(H_difint), x = df_no_error$similarity, xlab= "Relation", ylab = "Residuals")
 abline(0,0)
-plot(y = residuals(H_difint), x = df_no_error$dprime, xlab= "Relation", ylab = "Residuals")
+plot(y = residuals(H_difint), x = df_no_error$dprime, xlab= "dprime", ylab = "Residuals")
 abline(0,0)
 ```
 
 
 ```{r}
+par(mfrow=c(2,2))
 #how about interactions?
 
 xyplot(residuals(H_difint) ~ as.factor(Relation) | SOA, data = df_no_error)
@@ -225,15 +262,16 @@ xyplot(residuals(H_difint) ~ as.factor(SOA) | Relation, data = df_no_error)
 
 #predictor not used
 xyplot(residuals(H_difint) ~ similarity | SOA, data = df_no_error)
-xyplot(residuals(H_difint) ~ dprime | SOA , data = df_no_error) #Thats a good reason to noy use it.
+xyplot(residuals(H_difint) ~ dprime | SOA , data = df_no_error) #Thats a good reason to not use it.
 ```
 
+The plot of residuals shows an interaction between SOA and dprime. In our initial model we are not going to use the dprime variable. The fact that every subject has a unique dprime value, and that the multilevel model is taking in count the variability of each subject using ID as a grouping factor will adress this situation. Also dprime is an output of a different experiment.  
+A  model covering this issue can be found later in the document. The remaining residuals look good and there is no presence of anomalous shape or distribution.
 
 ```{r}
-#INSERT GRAPH WITH COEF INTERVAL HERE  ------
-install.packages('influence.ME')
-library(influence.ME)
-summary(H_difint)
+#Calculate coef interval for a baseline subject nr 66 -----
+#install.packages('influence.ME')
+
 coef = as.numeric(fixef(H_difint)[-1])
 conditions = factor(c("WR","SR","SOA 150","SOA 233","SOA 317","Num.Trial","WR:SOA 150","SR:SOA 150","WR:SOA 233","SR:SOA 233","WR:SOA 317","SR:SOA 317"),levels = c("WR","SR","SOA 150","SOA 233","SOA 317","Num.Trial","WR:SOA 150","SR:SOA 150","WR:SOA 233","SR:SOA 233","WR:SOA 317","SR:SOA 317"))
 colores = c(1,1,0,0,0,0,0,0,0,0,0,0)
@@ -242,54 +280,109 @@ coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
 coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
 ```
 
-```{r,fig.width= 9}
-# 95 confindence interval multilevel model H_difint -----
+```{r}
+# 95 confidence interval multilevel model H_difint, baseline subject nr 66  -----
 
 ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
-  labs( x = 'Fixed factors', y='95% CI of Slope') + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 66, Relation "nr"') + 
   theme(axis.text.x = element_text(size=rel(1.5)),
         axis.text.y = element_text(size=rel(1.5)),
         axis.title.x = element_text(size = rel(1.4)),
         axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
-
-
 ```
 
 
+```{r}
+#95 confidence interval multilevel model H_difint, baseline subject nr 150
 
-
-
-
-
-
-
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '150','66','233','317'))
+H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_difint)[-1])
+conditions = factor(c("WR","SR","SOA 66","SOA 233","SOA 317","Num.Trial","WR:SOA 66","SR:SOA 66","WR:SOA 233","SR:SOA 233","WR:SOA 317","SR:SOA 317"),levels = c("WR","SR","SOA 66","SOA 233","SOA 317","Num.Trial","WR:SOA 66","SR:SOA 66","WR:SOA 233","SR:SOA 233","WR:SOA 317","SR:SOA 317"))
+colores = c(1,1,0,0,0,0,0,0,0,1,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 150, Relation "nr"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
 
 
 ```{r}
+#95 confidence interval multilevel model H_difint, baseline subject nr 233
 
-# Ploting per subject | Not Really neccesary but check with Jerry
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '233','66','150','317'))
+H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_difint)[-1])
+conditions = factor(c("WR","SR","SOA 66","SOA 150","SOA 317","Num.Trial","WR:SOA 66","SR:SOA 66","WR:SOA 150","SR:SOA 150","WR:SOA 317","SR:SOA 317"),levels = c("WR","SR","SOA 66","SOA 150","SOA 317","Num.Trial","WR:SOA 66","SR:SOA 66","WR:SOA 150","SR:SOA 150","WR:SOA 317","SR:SOA 317"))
+colores = c(1,1,0,0,1,0,0,0,0,1,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', subtitle= 'SOA 233, Relation "nr"', title = '95% CI of Slope') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
+
+
+```{r}
+#95 confidence interval multilevel model H_difint, baseline subject nr 317
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '317','66','150','233'))
+H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_difint)[-1])
+conditions = factor(c("WR","SR","SOA 66","SOA 150","SOA 233","Num.Trial","WR:SOA 66","SR:SOA 66","WR:SOA 150","SR:SOA 150","WR:SOA 233","SR:SOA 233"),levels = c("WR","SR","SOA 66","SOA 150","SOA 233","Num.Trial","WR:SOA 66","SR:SOA 66","WR:SOA 150","SR:SOA 150","WR:SOA 233","SR:SOA 233"))
+colores = c(1,1,0,0,1,0,0,0,0,0,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 317, Relation "nr"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
+
+
+In order to verify that the model is fitting properly, I will look at residuals for individual subjects.  If they do not present strange distributions, then that’s a good sign and suggestive that the model is adequate. 
+
+```{r}
+par(mfrow=c(2,2))
+# Ploting  residuals per subject----
 intercepts = ranef(H_difint)
-#View(intercepts[['ID']])  Look for the biggest and smallest intercept
+#View(intercepts[['ID']])  Look for the subject with biggest and smallest intercept.
+
 index = df_no_error$ID == '317_11_30'
-
 plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Num.Trial, xlab = 'Num Trials', ylab = 'Residuals')
 abline(0,0)
 plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Relation, xlab = 'Relations', ylab = 'Residuals')
-plot(y = residuals(H_difint)[index], x = df_no_error[index,]$SOA, xlab = 'SOA', ylab = 'Residuals') #what this would mean?
 xyplot(residuals(H_difint)[index] ~ df_no_error[index,]$Num.Trial | Relation,  data = df_no_error)
-abline(0,0)
+```
 
-
+```{r}
 index = df_no_error$ID == '317_11_25'
-
 plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Num.Trial, xlab = 'Num Trials', ylab = 'Residuals')
 abline(0,0)
 plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Relation, xlab = 'Relations', ylab = 'Residuals')
-
 xyplot(residuals(H_difint)[index] ~ df_no_error[index,]$Num.Trial | Relation,  data = df_no_error)
-abline(0,0)
+```
 
-#One good
+```{r}
+#One subject in the middle
 index = df_no_error$ID ==  '233_19_19'
 plot(y = residuals(H_difint)[index], x = df_no_error[index,]$Num.Trial, xlab = 'Num Trials', ylab = 'Residuals')
 abline(0,0)
@@ -298,42 +391,130 @@ xyplot(residuals(H_difint)[index] ~ df_no_error[index,]$Num.Trial | Relation,  d
 
 ```
 
-```{r}
+Residuals plotting do not provide evidence of strange distributions, suggesting a good fit of the model.
 
+In summary, the four experimental groups shown statistical differences depending on the semantic relatedness between the prime and the target stimulus.  There was a reduction on the RT for every group when the pair of stimuli were Weak or Strong related in comparison to not being related. However,  there is no evidence of a Group effect. Different SOA values did not reduce nor increase RT for any Relation level.LimitationsA possible limitation to generalize these results is the fact that subject performed above-chance on the visibility test. Also, we found a group effect on the d'prime score,  the bigger the SOA, the bigger the dprime score.  Nevertheless, Ortells et. al (2016) also reported differences among groups on the dprime. Given the fact that dprime nor SOA presented  an influence on the RT, and If we take in count the lack of difference on the subjective report (Prelikert), we could suggest that the different SOA interval has a differential effect over the conscious processing of the prime stimuli only during the objective visibility test but no  effect during the experimental task (priming task). Given the fact that the attention has a crucial role on conscious processing, it could be that the short period of time between stimulus combined with an attentional focus on the processing of the target stimuli would be interfering on the processing of the prime stimuli.
+
+
+```{r eval=FALSE, include=FALSE}
+#SOME GRAPHS, they overlap with my other  ones--------
+
+#ggplot(data=df_no_error) + geom_jitter(aes(y = RT, x = Relation, color = Relation)) + theme_classic() + geom_smooth(aes(Relation, RT),method = lm, se = T ) + facet_wrap(~SOA)
+
+ggplot(data=df_no_error) + geom_jitter(aes(y = RT, x = similarity, color = similarity)) + theme_classic() + geom_smooth(aes(similarity, RT), color = 'red',method = lm, se = T ) + facet_wrap(~SOA) 
+
+ggplot(data=df_no_error) + geom_violin(aes(y = RT, x = as.factor(similarity), fill = similarity),color = 'black') + theme_classic() + geom_smooth(aes(similarity, RT), color = 'red',method = lm, se = T ) + facet_wrap(~SOA) + theme(legend.position = 'none')
+
+#ggplot(data=df_no_error) + geom_violin(aes(y = RT, x = as.factor(similarity), color = as.factor(similarity))) + theme_classic()  + facet_wrap(~SOA)
+ggplot(data=df_no_error) + geom_violin(aes(y = RT, x = Relation,  fill= Relation),color = 'black') + theme_classic() + facet_wrap(~SOA)
 ```
 
 
+### References 
+- *Ortells, J. J., Kiefer, M., Castillo, A., Megías, M., & Morillas, A. (2016). The semantic origin of unconscious priming: Behavioral and event-related potential evidence during category congruency priming from strongly and weakly related masked words. Cognition, 146, 143–157. https://doi.org/10.1016/j.cognition.2015.09.012*
 
+- *Bruno, N., Díaz Rivera, M., Embon, I., Iorio, A. (2016). Procesamiento Subliminal Según El Grado De Relación Semántica. VIII Congreso Internacional de Investigación y Práctica Profesional en Psicología. Facultad de Psicología - Universidad de Buenos Aires, Buenos Aires.*
 
+<P style="page-break-before: always">
+
+Modeling dprime into the multilevel model.
+
+Model 4 - Different intercepts (including dprime as fixed variable)
+$Y_{ij} = \alpha_{j[i]} + \beta1_i * \beta2_{j[i]} + \beta3_i + \beta4_{j[i]]}  + \epsilon_i$
 ```{r}
-#SOME GRAPHS --------
-
-  ggplot(data=df_no_error) + geom_jitter(aes(y = RT, x = as.factor(Relation), color = as.factor(Relation))) + theme_classic() + geom_smooth(aes(Relation, RT),method = lm, se = T ) + facet_wrap(~SOA)
-
-ggplot(data=df_no_error) + geom_jitter(aes(y = RT, x = similarity, color = similarity)) + theme_classic() + geom_smooth(aes(similarity, RT),method = lm, se = T ) + facet_wrap(~SOA)
-
-ggplot(data=df_no_error) + geom_boxplot(aes(y = RT, x = similarity, color = as.factor(similarity))) + theme_classic()  + facet_wrap(~SOA)
-ggplot(data=df_no_error) + geom_boxplot(aes(y = RT, x = as.factor(Relation), color = as.factor(Relation))) + theme_classic() + geom_smooth(aes(Relation, RT),method = lm, se = T ) + facet_wrap(~SOA)
+# I would like to include dprime as a fixed effect with an interaction with SOA!
+H_4 = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + c.dprime  + (1|ID) , data = df_no_error)
+summary(H_4)
+plot(residuals(H_4)~c.dprime, data = df_no_error)
+xyplot(residuals(H_4) ~ c.dprime | SOA , data = df_no_error)
+anova(H_difint,H_4) #It does not look different, but theoretically should be possible. My first model would take in countt his dprime performance. But just to look possible outcomes  I will check.
 ```
 
+```{r}
+#95 confindence interval multilevel model H_difint, baseline subject nr 66
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '66','150','233','317'))
+H_4 = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial +  c.dprime  + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_4)[-c(1, 9:14)])
+conditions = factor(c("WR","SR", "SOA 150","SOA 233","SOA 317","Num.Trial","dprime"),levels = c("WR","SR", "SOA 150","SOA 233","SOA 317","Num.Trial","dprime"))
+colores = c(1,1,0,0,0,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_4)[-c(1, 9:14)])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_4)[-c(1, 9:14)])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 66, Relation "nr"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
 
 
 
 
+#-------------------------------------------------------------------------
+#95 confindence interval multilevel model H_difint, baseline subject nr 150
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '150','66','233','317'))
+H_4 = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial +  c.dprime  + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_4)[-c(1, 9:14)])
+conditions = factor(c("WR","SR", "SOA 66","SOA 233","SOA 317","Num.Trial","dprime"),levels = c("WR","SR", "SOA 66","SOA 233","SOA 317","Num.Trial","dprime"))
+colores = c(1,1,0,0,0,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_4)[-c(1, 9:14)])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_4)[-c(1, 9:14)])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 150, Relation "nr"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+
+
+#-------------------------------------------------------------------------
+#95 confindence interval multilevel model H_difint, baseline subject nr 233
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '233','66','150','317'))
+H_4 = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial +  c.dprime  + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_4)[-c(1, 9:14)])
+conditions = factor(c("WR","SR", "SOA 66","SOA 150","SOA 317","Num.Trial","dprime"),levels = c("WR","SR", "SOA 66","SOA 150","SOA 317","Num.Trial","dprime"))
+colores = c(1,1,0,0,1,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_4)[-c(1, 9:14)])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_4)[-c(1, 9:14)])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 233, Relation "nr"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
 
 
 
+#-------------------------------------------------------------------------
+#95 confindence interval multilevel model H_difint, baseline subject nr 317
 
-```{r} 
-# Maybe a logistic regression
-dffinal.log = dffinal
-dffinal.log$SOA = factor(dffinal.log$SOA, levels = c('317', '66','150','233' ))
-dffinal.log$Relation = factor(dffinal.log$Relation, levels = c('nr', 'WR', 'SR'))
-h.log = lmer(as.numeric(Answer) ~ Relation * as.factor(SOA) + Num.Trial + (1 | ID), data = dffinal.log)
-summary(h.log)
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '317','66','150','233'))
+H_4 = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial +  c.dprime  + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_4)[-c(1, 9:14)])
+conditions = factor(c("WR","SR", "SOA 66","SOA 150","SOA 233","Num.Trial","dprime"),levels = c("WR","SR", "SOA 66","SOA 150","SOA 233","Num.Trial","dprime"))
+colores = c(1,1,0,0,1,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_4)[-c(1, 9:14)])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_4)[-c(1, 9:14)])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 317, Relation "nr"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
 
-
-h.log = lmer(as.numeric(Answer) ~ similarity * as.factor(SOA) + Num.Trial + (1 + SOA | ID), data = dffinal.log)
-summary(h.log)
 ```
 

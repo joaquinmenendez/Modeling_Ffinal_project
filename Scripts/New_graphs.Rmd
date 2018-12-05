@@ -1,0 +1,197 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+#NEW GRAPHS SHOWING SR conditions as baseline
+
+#95 confidence interval multilevel model H_difint, baseline subject SR 150
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '150','66','233','317'))
+df_no_error$Relation = factor(df_no_error$Relation, levels = c('SR', 'WR', 'nr'))
+H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_difint)[-1])
+conditions = factor(c("WR","nr","SOA 66","SOA 233","SOA 317","Num.Trial","WR:SOA 66","nr:SOA 66","WR:SOA 233","nr:SOA 233","WR:SOA 317","nr:SOA 317"),levels = c("WR","nr","SOA 66","SOA 233","SOA 317","Num.Trial","WR:SOA 66","nr:SOA 66","WR:SOA 233","nr:SOA 233","WR:SOA 317","nr:SOA 317"))
+colores = c(0,1,0,0,0,0,0,0,0,1,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 150, Relation "SR"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
+
+
+```{r}
+#NEW GRAPHS SHOWING SR conditions as baseline
+
+#95 confidence interval multilevel model H_difint, baseline subject SR 150
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '66','150','233','317'))
+df_no_error$Relation = factor(df_no_error$Relation, levels = c('SR', 'WR', 'nr'))
+H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_difint)[-1])
+conditions = factor(c("WR","nr","SOA 150","SOA 233","SOA 317","Num.Trial","WR:SOA 150","nr:SOA 150","WR:SOA 233","nr:SOA 233","WR:SOA 317","nr:SOA 317"),levels = c("WR","nr","SOA 150","SOA 233","SOA 317","Num.Trial","WR:SOA 150","nr:SOA 150","WR:SOA 233","nr:SOA 233","WR:SOA 317","nr:SOA 317"))
+colores = c(0,1,0,0,0,0,0,0,0,0,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 66, Relation "SR"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
+
+```{r}
+#NEW GRAPHS SHOWING SR conditions as baseline
+
+#95 confidence interval multilevel model H_difint, baseline subject SR 233
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '233','66','150','317'))
+df_no_error$Relation = factor(df_no_error$Relation, levels = c('SR', 'WR', 'nr'))
+H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_difint)[-1])
+conditions = factor(c("WR","nr","SOA 66","SOA 150","SOA 317","Num.Trial","WR:SOA 66","nr:SOA 66","WR:SOA 150","nr:SOA 150","WR:SOA 317","nr:SOA 317"),levels = c("WR","nr","SOA 66","SOA 150","SOA 317","Num.Trial","WR:SOA 66","nr:SOA 66","WR:SOA 150","nr:SOA 150","WR:SOA 317","nr:SOA 317"))
+colores = c(0,1,0,0,0,0,0,0,0,1,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 233, Relation "SR"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
+
+
+
+```{r}
+#NEW GRAPHS SHOWING SR conditions as baseline
+
+#95 confidence interval multilevel model H_difint, baseline subject SR 317
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '317','66','150','233'))
+df_no_error$Relation = factor(df_no_error$Relation, levels = c('SR', 'WR', 'nr'))
+H_difint = lmer(log.RT ~ Relation * as.factor(SOA) + c.Num.Trial + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_difint)[-1])
+conditions = factor(c("WR","nr","SOA 66","SOA 150","SOA 233","Num.Trial","WR:SOA 66","nr:SOA 66","WR:SOA 150","nr:SOA 150","WR:SOA 233","nr:SOA 233"),levels = c("WR","nr","SOA 66","SOA 150","SOA 233","Num.Trial","WR:SOA 66","nr:SOA 66","WR:SOA 150","nr:SOA 150","WR:SOA 233","nr:SOA 233"))
+colores = c(0,1,0,0,0,0,0,0,0,0,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_difint)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 317, Relation "SR"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+
+```
+
+
+
+
+
+
+
+
+
+```{r} 
+# Model 4 - with SR 150 as baseline 
+df_no_error$Relation = factor(df_no_error$Relation, levels = c('SR', 'WR', 'nr'))
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '150','66','233','317'))
+H_4 = lmer(log.RT ~ Relation  + c.Num.Trial +  c.dprime * as.factor(SOA) + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_4)[-1])
+conditions = factor(c("WR","nr","Num.Trial", 'c.prime',"SOA 66","SOA 233","SOA 317","dprime:SOA 66","dprime:SOA 233","dprime:SOA 317"),levels = c("WR","nr","Num.Trial", 'c.prime',"SOA 66","SOA 233","SOA 317","dprime:SOA 66","dprime:SOA 233","dprime:SOA 317"))
+colores = c(0,1,0,1,0,0,0,0,0,1)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_4)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_4)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 150, Relation "SR"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
+
+```{r}
+#95 confindence interval multilevel model H_difint, baseline subject SR 66
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '66','150','233','317'))
+H_4 = lmer(log.RT ~ Relation  + c.Num.Trial +  c.dprime * as.factor(SOA) + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_4)[-1])
+conditions = factor(c("WR","nr","Num.Trial", 'c.prime',"SOA 150","SOA 233","SOA 317","dprime:SOA 150","dprime:SOA 233","dprime:SOA 317"),levels = c("WR","nr","Num.Trial", 'c.prime',"SOA 150","SOA 233","SOA 317","dprime:SOA 150","dprime:SOA 233","dprime:SOA 317"))
+colores = c(0,1,0,0,0,0,0,0,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_4)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_4)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 66, Relation "SR"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+
+```
+
+
+```{r}
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '233','66','150','317'))
+H_4 = lmer(log.RT ~ Relation  + c.Num.Trial +  c.dprime * as.factor(SOA) + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_4)[-1])
+conditions = factor(c("WR","nr","Num.Trial", 'c.prime',"SOA 66","SOA 150","SOA 317","dprime:SOA 66","dprime:SOA 150","dprime:SOA 317"),levels = c("WR","nr","Num.Trial", 'c.prime',"SOA 66","SOA 150","SOA 317","dprime:SOA 66","dprime:SOA 150","dprime:SOA 317"))
+colores = c(0,1,0,0,0,0,0,0,0,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_4)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_4)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 233, Relation "SR"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
+
+
+```{r}
+
+df_no_error$SOA = factor(df_no_error$SOA, levels = c( '317','66','150','233'))
+H_4 = lmer(log.RT ~ Relation  + c.Num.Trial +  c.dprime * as.factor(SOA) + (1|ID), data = df_no_error) 
+###############
+coef = as.numeric(fixef(H_4)[-1])
+conditions = factor(c("WR","nr","Num.Trial", 'c.prime',"SOA 66","SOA 150","SOA 233","dprime:SOA 66","dprime:SOA 150","dprime:SOA 233"),levels = c("WR","nr","Num.Trial", 'c.prime',"SOA 66","SOA 150","SOA 233","dprime:SOA 66","dprime:SOA 150","dprime:SOA 233"))
+colores = c(0,1,0,0,0,0,0,0,1,0)
+coef_pos = coef + c(1.96)* (influence.ME::se.fixef(H_4)[-1])
+coef_neg = coef + c(-1.96)* (influence.ME::se.fixef(H_4)[-1])
+coefs = data.frame(cbind(coef,coef_pos,coef_neg)) #,conditions))
+##############
+ggplot(data= coefs, aes(x = conditions,y= coef, color = colores)) +  geom_point(stat="identity", color="black", position=position_dodge( width = .2)) + geom_errorbar(aes(ymin=coef_neg, ymax=coef_pos),size= 1, width=.3, position=position_dodge()) + geom_hline(yintercept = 0) + 
+  labs( x = 'Fixed factors', title ='95% CI of Slope', subtitle= 'SOA 317, Relation "SR"') + 
+  theme(axis.text.x = element_text(size=rel(1.5)),
+        axis.text.y = element_text(size=rel(1.5)),
+        axis.title.x = element_text(size = rel(1.4)),
+        axis.title.y = element_text(size = rel(1.4)), legend.position = 'none' ) + coord_flip() + scale_color_gradient(low = "black", high = "red")
+```
+

@@ -7,7 +7,7 @@ output:
 subtitle: 'Exploratory analysis and inferential statistics '
 ---
 # Influence of Semantic Similarity and Stimulus Onset Asynchrony on Semantic Subliminal Processing 
-> *Studies employing a masked priming paradigm have observed that subliminal stimuli could be processed on a semantic level.  Semantic categorization of a consciously perceived stimulus could be facilitated by the presentation of a former stimulus that was not consciously perceived (subliminal). This facilitation is usually measured as the reaction time employed to respond to a task. When this facilitation occurs between congruent pairs of stimuli (from the same category) and does not occur between incongruent pairs (from different categories) is called congruency priming effect. Two principal factors modulate the subliminal priming effect, the semantic similarity between stimuli and the SOA.  Semantic similarity refers to the similarity in meaning or overlap of features between two words. The greater the similarity, the bigger the facilitation. Another factor that modulates priming effect is the interval between the onset of the first stimulus and the onset of the second stimulus of the par (SOA: stimulus onset asynchrony), showing that the bigger the SOA, the lower priming effect. Despite the fact that these two phenomena have been extensively studied, it has not been studied the influence of semantic strength has not been studied together with SOA duration. The goal of this study is to observe if semantic relatedness (strongly and weakly related pairs) could modulate congruency priming effect duration. To evaluate this, both semantic relatedness (strong and weak) and SOA were manipulated in a subliminal semantic priming task.*
+> ### *Studies employing a masked priming paradigm have observed that subliminal stimuli could be processed on a semantic level.  Semantic categorization of a consciously perceived stimulus could be facilitated by the presentation of a former stimulus that was not consciously perceived (subliminal). This facilitation is usually measured as the reaction time employed to respond to a task. When this facilitation occurs between congruent pairs of stimuli (from the same category) and does not occur between incongruent pairs (from different categories) is called congruency priming effect. Two principal factors modulate the subliminal priming effect, the semantic similarity between stimuli and the SOA.  Semantic similarity refers to the similarity in meaning or overlap of features between two words. The greater the similarity, the bigger the facilitation. Another factor that modulates priming effect is the interval between the onset of the first stimulus and the onset of the second stimulus of the par (SOA: stimulus onset asynchrony), showing that the bigger the SOA, the lower priming effect. Despite the fact that these two phenomena have been extensively studied, it has not been studied the influence of semantic strength has not been studied together with SOA duration. The goal of this study is to observe if semantic relatedness (strongly and weakly related pairs) could modulate congruency priming effect duration. To evaluate this, both semantic relatedness (strong and weak) and SOA were manipulated in a subliminal semantic priming task.*
 
 ```{r,include=FALSE}
 library(doBy)
@@ -175,11 +175,11 @@ df_summarized %>%
 
 df_summarized %>% 
   group_by(SOA) %>%
-  summarize(mean_dprime = mean(dprime), sd_dprime= sd(dprime))
+  summarise(mean_dprime = mean(dprime), sd_dprime= sd(dprime))
 
 df_summarized %>% 
   group_by(SOA) %>%
-  summarize(similarity.mean = mean(similarity), sd.similarity= sd(similarity))
+  summarise(similarity.mean = mean(similarity), sd.similarity= sd(similarity))
 ```
 
 
@@ -278,14 +278,14 @@ Prelikert by SOA groups are homogeneous (Levene test  F = 0.1087, p = 0.9548) bu
 ```{r}
 histogramRT<-ggplot(data = df_summarized, aes(x=dprime, fill=SOA))+
   labs(x="RT")+
-  ggtitle("Histogram of dPrime")+
+  ggtitle("Density plot of dPrime")+
   geom_density(color= 'black') +
   stat_function(fun = dnorm, colour = "Black",linetype = 2,size = 1 ,args = list(mean=mean(df_summarized$dprime), sd=sd(df_summarized$dprime))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
 
 histogramRT<-ggplot(data = df_summarized, aes(x=prelikert, fill = SOA))+
   labs(x="RT")+
-  ggtitle("Density  of prelikert")+
+  ggtitle("Density plot of prelikert")+
   geom_density(color= 'black') +
   stat_function(fun = dnorm, colour = "Black",linetype = 2,size = 1, args = list(mean=mean(df_summarized$prelikert), sd=sd(df_summarized$prelikert))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
@@ -324,10 +324,10 @@ ggplot(data = df_summarized,aes(x=prelikert, y=RT, color = Relation, fill = Rela
 Checking distribution of RT
 ```{r}
 #RESPONSE TIME AND SOA GROUPS ------
-histogramRT<-ggplot(df_summarized, aes(x=RT, color = SOA , fill = SOA))+
+histogramRT<-ggplot(df_summarized, aes(x=RT, fill = SOA))+
   labs(x="RT")+
   ggtitle("Density plot of RT (untransformed)") +
-  geom_density( )+
+  geom_density( color = 'black')+
   stat_function(fun = dnorm, colour = "Black" , linetype = 2,size = 1, args = list(mean=mean(df_summarized$RT), sd=sd(df_summarized$RT))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT
 ```
@@ -346,10 +346,10 @@ Applyng transformations to the RT data.
 df_transf = df_summarized
 df_transf$RT = log10(df_transf$RT+1)
 #Checking distribution Response time
-histogramRT<-ggplot(df_transf, aes(x=RT, color = SOA , fill = SOA))+
+histogramRT<-ggplot(df_transf, aes(x=RT,  fill = SOA))+
   labs(x="RT")+
   ggtitle("Density plot of log(RT)")+
-  geom_density()+
+  geom_density(color = 'black')+
   stat_function(fun = dnorm, colour = "Black", linetype = 2,size = 1, args = list(mean=mean(df_transf$RT), sd=sd(df_transf$RT))) + facet_wrap(~SOA)  + theme_classic()
 histogramRT #Not changes
 ```
