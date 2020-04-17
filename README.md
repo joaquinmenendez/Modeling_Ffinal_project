@@ -1,4 +1,4 @@
-## Influence of Semantic Similarity and Stimulus Onset Asynchrony on Semantic Subliminal Processing
+# Influence of Semantic Similarity and Stimulus Onset Asynchrony on Semantic Subliminal Processing
 
 **Abstract**
 
@@ -21,3 +21,8 @@ Although SOA has proven to be an important factor when studying priming phenomen
 Despite that both SOA and semantic similarity influence have been extensively studied, it has not been studied the influence of semantic similarity and SOA together. The main objectives of this study were two.  First, replicate results of former studies. In other words, observe whether the modulation of semantic similarity on a masked priming task leads to a difference in RT. Second, determine a SOA limit for subliminal priming using pairs of images related with different semantic strength. In other words, evaluate if the priming effect duration depends on the semantic similarity of stimuli and to what extent. 
 These results will contribute to expanding current knowledge about subliminal semantic processing. At the same time, they will offer new evidence about the role of consciousness in the processing of stimuli.
 
+**Results**
+
+For a detailed descripton of the result consult the [final report](/Multimedia/Final_multilevel.html).
+You can have access to the poster used for the conference clicking on the image below.
+![Poster](Multimedia/Influence_of_semantic_similarity_and_stimulus_onset_Asinchrony_on_semantic_subliminal_processing.jpg)
