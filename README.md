@@ -24,5 +24,5 @@ These results will contribute to expanding current knowledge about subliminal se
 **Results**
 
 For a detailed descripton of the result consult the [final report](/Multimedia/Final_multilevel.html).
-You can have access to the poster used for the conference clicking on the image below.
-![Poster](Multimedia/Influence_of_semantic_similarity_and_stimulus_onset_Asinchrony_on_semantic_subliminal_processing.jpg)
+Or you can have access to a PDF file version of the [poster](/Multimedia/Influence_of_semantic_similarity_and_stimulus_onset_Asinchrony_on_semantic_subliminal_processing.pdf) presented at the conference.<br>
+![Poster](https://raw.githubusercontent.com/joaquinmenendez/Modeling_final_project/master/Multimedia/Influence_of_semantic_similarity_and_stimulus_onset_Asinchrony_on_semantic_subliminal_processing.jpg)
